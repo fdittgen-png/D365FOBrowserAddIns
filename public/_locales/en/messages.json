@@ -33,6 +33,7 @@
   "overlayNoteCancel": { "message": "Cancel" },
   "overlayNoteSave": { "message": "Save note" },
   "reviewExport": { "message": "Export XML bundle" },
+  "reviewExportDocx": { "message": "Export DOCX" },
   "reviewSubmit": { "message": "Submit to tracker" },
   "reviewTitlePlaceholder": { "message": "Short title of the issue" },
   "reviewDescriptionPlaceholder": { "message": "Describe the problem, expected vs actual behaviour..." },

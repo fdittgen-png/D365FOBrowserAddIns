@@ -9,16 +9,10 @@ import {
   getOptions,
   getTrackerSettings,
 } from '@shared/storage';
-import type {
-  Message,
-  MessageResponse,
-  Session,
-  Step,
-  Environment,
-  SnapshotBlob,
-} from '@shared/types';
+import type { Message, MessageResponse, Session, Step, Environment, SnapshotBlob } from '@shared/types';
 import { EXT_VERSION } from '@shared/types';
 import { exportSessionAsZip } from '@shared/exporter';
+import { exportSessionAsDocx } from '@shared/docx';
 import { getProvider, TRACKER_PROVIDERS } from '@shared/trackers';
 import { collectAttachments } from '@shared/trackers/common';
 import { captureFullPage } from './full-page-capture';
@@ -110,7 +104,7 @@ async function broadcastState(session: Session | null): Promise<void> {
 }
 
 function countScreenshots(session: Session): number {
-  return session.steps.reduce((n, s) => n + (('screenshotId' in s && s.screenshotId) ? 1 : 0), 0);
+  return session.steps.reduce((n, s) => n + ('screenshotId' in s && s.screenshotId ? 1 : 0), 0);
 }
 
 async function snapshotAndAttach(session: Session, stepId?: string): Promise<string | null> {
@@ -142,10 +136,7 @@ async function snapshotAndAttach(session: Session, stepId?: string): Promise<str
 
 // ----------------- message router -----------------
 
-export async function handleMessage(
-  msg: Message,
-  sender: chrome.runtime.MessageSender,
-): Promise<MessageResponse> {
+export async function handleMessage(msg: Message, sender: chrome.runtime.MessageSender): Promise<MessageResponse> {
   const tabId = sender.tab?.id;
 
   switch (msg.type) {
@@ -410,6 +401,18 @@ export async function handleMessage(
       }
     }
 
+    case 'REVIEW_EXPORT_DOCX': {
+      const session = await getArchivedSession(msg.sessionId);
+      if (!session) return { ok: false, error: 'not-found' };
+      try {
+        const { url, filename } = await exportSessionAsDocx(session);
+        await chrome.downloads.download({ url, filename, saveAs: true });
+        return { ok: true, data: { filename } };
+      } catch (e) {
+        return { ok: false, error: (e as Error).message };
+      }
+    }
+
     case 'REVIEW_SUBMIT_TRACKER': {
       const session = await getArchivedSession(msg.sessionId);
       if (!session) return { ok: false, error: 'not-found' };
@@ -420,7 +423,10 @@ export async function handleMessage(
         if (!provider) throw new Error(`Unknown tracker provider: ${settings.activeProviderId}`);
         const config = settings.providerConfigs[provider.id] ?? {};
         const validation = provider.validateConfig(config as Record<string, unknown>);
-        if (!validation.ok) throw new Error(`Invalid ${provider.displayName} config: ${Object.values(validation.errors ?? {}).join('; ')}`);
+        if (!validation.ok)
+          throw new Error(
+            `Invalid ${provider.displayName} config: ${Object.values(validation.errors ?? {}).join('; ')}`,
+          );
         const { attachments } = await collectAttachments(session);
         const result = await provider.submit(session, config as Record<string, unknown>, attachments);
         return { ok: true, data: { providerId: provider.id, providerName: provider.displayName, ...result } };
@@ -495,9 +501,7 @@ chrome.commands.onCommand.addListener(async (command) => {
       // The overlay owns the note modal. Ask the content script to open it;
       // fail silently if the tab doesn't have a content script (the user
       // pressed the shortcut from a non-D365FO tab while a session is live).
-      await chrome.tabs
-        .sendMessage(tab.id, { type: 'TRIGGER_OVERLAY_NOTE' } satisfies Message)
-        .catch(() => undefined);
+      await chrome.tabs.sendMessage(tab.id, { type: 'TRIGGER_OVERLAY_NOTE' } satisfies Message).catch(() => undefined);
       break;
     }
     case 'pause-resume': {

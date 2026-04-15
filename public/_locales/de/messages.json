@@ -30,6 +30,7 @@
   "overlayNoteCancel": { "message": "Abbrechen" },
   "overlayNoteSave": { "message": "Notiz speichern" },
   "reviewExport": { "message": "XML-Paket exportieren" },
+  "reviewExportDocx": { "message": "Als DOCX exportieren" },
   "reviewSubmit": { "message": "An Ticket-System senden" },
   "reviewTitlePlaceholder": { "message": "Kurzer Titel des Problems" },
   "reviewDescriptionPlaceholder": { "message": "Problem, erwartetes und tatsächliches Verhalten beschreiben..." },

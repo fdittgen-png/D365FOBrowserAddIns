@@ -12,9 +12,15 @@ let saveTimer: number | null = null;
 
 async function loadSession(): Promise<void> {
   const id = location.hash.slice(1);
-  if (!id) { toast('No session id in URL'); return; }
+  if (!id) {
+    toast('No session id in URL');
+    return;
+  }
   const resp = await send<Session>({ type: 'REVIEW_GET_SESSION', sessionId: id });
-  if (!resp.ok || !resp.data) { toast(`Session not found: ${resp.error}`); return; }
+  if (!resp.ok || !resp.data) {
+    toast(`Session not found: ${resp.error}`);
+    return;
+  }
   session = resp.data;
   renderEnvironment();
   renderMeta();
@@ -39,9 +45,12 @@ function renderEnvironment(): void {
     ['Extension', env.extensionVersion],
   ];
   for (const [k, v] of rows) {
-    const dt = document.createElement('dt'); dt.textContent = k;
-    const dd = document.createElement('dd'); dd.textContent = v ?? '—';
-    dl.appendChild(dt); dl.appendChild(dd);
+    const dt = document.createElement('dt');
+    dt.textContent = k;
+    const dd = document.createElement('dd');
+    dd.textContent = v ?? '—';
+    dl.appendChild(dt);
+    dl.appendChild(dd);
   }
 }
 
@@ -63,13 +72,20 @@ async function getSnapshotDataUrl(id: string): Promise<string | null> {
 
 function stepSummary(step: Step): { label: string; sub?: string } {
   switch (step.kind) {
-    case 'navigate': return { label: step.formTitle ?? step.menuItem ?? 'Navigate', sub: step.url };
-    case 'click':    return { label: step.label, sub: step.role ?? '' };
-    case 'edit':     return { label: step.fieldLabel, sub: `"${step.oldValue}" → "${step.newValue}"` };
-    case 'error':    return { label: 'Error', sub: step.message };
-    case 'manual-snap': return { label: 'Manual snapshot', sub: step.formTitle };
-    case 'note':     return { label: 'Note', sub: step.text };
-    case 'pasted-img': return { label: 'Pasted image', sub: step.note };
+    case 'navigate':
+      return { label: step.formTitle ?? step.menuItem ?? 'Navigate', sub: step.url };
+    case 'click':
+      return { label: step.label, sub: step.role ?? '' };
+    case 'edit':
+      return { label: step.fieldLabel, sub: `"${step.oldValue}" → "${step.newValue}"` };
+    case 'error':
+      return { label: 'Error', sub: step.message };
+    case 'manual-snap':
+      return { label: 'Manual snapshot', sub: step.formTitle };
+    case 'note':
+      return { label: 'Note', sub: step.text };
+    case 'pasted-img':
+      return { label: 'Pasted image', sub: step.note };
   }
 }
 
@@ -93,9 +109,16 @@ async function renderSteps(): Promise<void> {
 
     const body = document.createElement('div');
     body.className = 'body';
-    const lbl = document.createElement('div'); lbl.className = 'label'; lbl.textContent = label;
+    const lbl = document.createElement('div');
+    lbl.className = 'label';
+    lbl.textContent = label;
     body.appendChild(lbl);
-    if (sub) { const s = document.createElement('div'); s.className = 'sub'; s.textContent = sub; body.appendChild(s); }
+    if (sub) {
+      const s = document.createElement('div');
+      s.className = 'sub';
+      s.textContent = sub;
+      body.appendChild(s);
+    }
     if (step.kind !== 'note') {
       const note = document.createElement('textarea');
       note.placeholder = 'Add a note to this step...';
@@ -109,11 +132,18 @@ async function renderSteps(): Promise<void> {
 
     const controls = document.createElement('div');
     controls.className = 'controls';
-    const up = document.createElement('button'); up.textContent = '↑';
-    up.addEventListener('click', () => { moveStep(i, -1); });
-    const down = document.createElement('button'); down.textContent = '↓';
-    down.addEventListener('click', () => { moveStep(i, 1); });
-    const del = document.createElement('button'); del.textContent = '✕';
+    const up = document.createElement('button');
+    up.textContent = '↑';
+    up.addEventListener('click', () => {
+      moveStep(i, -1);
+    });
+    const down = document.createElement('button');
+    down.textContent = '↓';
+    down.addEventListener('click', () => {
+      moveStep(i, 1);
+    });
+    const del = document.createElement('button');
+    del.textContent = '✕';
     del.addEventListener('click', () => {
       if (!confirm('Delete this step?')) return;
       session!.steps.splice(i, 1);
@@ -150,7 +180,10 @@ async function renderSteps(): Promise<void> {
         const current = session;
         if (!current) return;
         const url = await getSnapshotDataUrl(snapId);
-        if (!url) { toast('Snapshot not available'); return; }
+        if (!url) {
+          toast('Snapshot not available');
+          return;
+        }
         openRedactor({
           sourceDataUrl: url,
           onSave: async (editedDataUrl) => {
@@ -204,7 +237,10 @@ async function persist(): Promise<void> {
   session.title = $<HTMLInputElement>('title').value;
   session.description = $<HTMLTextAreaElement>('description').value;
   session.severity = $<HTMLSelectElement>('severity').value as Session['severity'];
-  session.tags = $<HTMLInputElement>('tags').value.split(',').map((s) => s.trim()).filter(Boolean);
+  session.tags = $<HTMLInputElement>('tags')
+    .value.split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
   dirty = false;
   await send({ type: 'REVIEW_UPDATE_SESSION', session });
 }
@@ -213,7 +249,9 @@ function toast(msg: string): void {
   const t = $<HTMLDivElement>('toast');
   t.textContent = msg;
   t.hidden = false;
-  setTimeout(() => { t.hidden = true; }, 3500);
+  setTimeout(() => {
+    t.hidden = true;
+  }, 3500);
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -230,6 +268,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!session) return;
     await persist();
     const resp = await send<{ filename: string }>({ type: 'REVIEW_EXPORT_XML', sessionId: session.id });
+    if (resp.ok) toast(`Exported ${resp.data?.filename}`);
+    else toast(`Export failed: ${resp.error}`);
+  });
+
+  $<HTMLButtonElement>('btn-export-docx').addEventListener('click', async () => {
+    if (!session) return;
+    await persist();
+    const resp = await send<{ filename: string }>({ type: 'REVIEW_EXPORT_DOCX', sessionId: session.id });
     if (resp.ok) toast(`Exported ${resp.data?.filename}`);
     else toast(`Export failed: ${resp.error}`);
   });
@@ -276,7 +322,10 @@ document.addEventListener('DOMContentLoaded', () => {
           pngDataUrl: dataUrl,
         });
         if (resp.ok) {
-          const sresp: Awaited<ReturnType<typeof send<Session>>> = await send<Session>({ type: 'REVIEW_GET_SESSION', sessionId: current.id });
+          const sresp: Awaited<ReturnType<typeof send<Session>>> = await send<Session>({
+            type: 'REVIEW_GET_SESSION',
+            sessionId: current.id,
+          });
           if (sresp.ok && sresp.data) {
             session = sresp.data;
             await renderSteps();
@@ -289,7 +338,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  window.addEventListener('beforeunload', () => { void persist(); });
+  window.addEventListener('beforeunload', () => {
+    void persist();
+  });
 });
 
 // Keep TS happy about the Message import

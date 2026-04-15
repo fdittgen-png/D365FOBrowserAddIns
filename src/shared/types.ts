@@ -82,14 +82,7 @@ export interface PastedImageStep {
   note?: string;
 }
 
-export type Step =
-  | NavigateStep
-  | ClickStep
-  | EditStep
-  | ErrorStep
-  | ManualSnapStep
-  | NoteStep
-  | PastedImageStep;
+export type Step = NavigateStep | ClickStep | EditStep | ErrorStep | ManualSnapStep | NoteStep | PastedImageStep;
 
 export interface Session {
   id: string;
@@ -163,6 +156,7 @@ export type Message =
   | { type: 'REVIEW_ADD_PASTED_IMAGE'; sessionId: string; pngDataUrl: string; note?: string }
   | { type: 'REVIEW_REPLACE_SNAPSHOT'; sessionId: string; snapshotId: string; pngDataUrl: string }
   | { type: 'REVIEW_EXPORT_XML'; sessionId: string }
+  | { type: 'REVIEW_EXPORT_DOCX'; sessionId: string }
   | { type: 'REVIEW_SUBMIT_TRACKER'; sessionId: string }
   | { type: 'REVIEW_GET_TRACKER_INFO' }
   // background -> content
