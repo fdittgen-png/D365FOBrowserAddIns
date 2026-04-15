@@ -190,13 +190,23 @@ document.addEventListener('DOMContentLoaded', () => {
     else toast(`Export failed: ${resp.error}`);
   });
 
-  $<HTMLButtonElement>('btn-submit-otrs').addEventListener('click', async () => {
+  $<HTMLButtonElement>('btn-submit-tracker').addEventListener('click', async () => {
     if (!session) return;
     await persist();
-    toast('Submitting to OTRS...');
-    const resp = await send<{ ticketNumber?: string; ticketId?: string }>({ type: 'REVIEW_SUBMIT_OTRS', sessionId: session.id });
-    if (resp.ok) toast(`OTRS ticket created: #${resp.data?.ticketNumber ?? '?'}`);
-    else toast(`OTRS failed: ${resp.error}`);
+    const info = await send<{ activeProviderName: string | null }>({ type: 'REVIEW_GET_TRACKER_INFO' });
+    const name = info.ok && info.data?.activeProviderName ? info.data.activeProviderName : 'tracker';
+    toast(`Submitting to ${name}...`);
+    const resp = await send<{ ticketNumber?: string; ticketId?: string; ticketUrl?: string; providerName?: string }>({
+      type: 'REVIEW_SUBMIT_TRACKER',
+      sessionId: session.id,
+    });
+    if (resp.ok) {
+      const n = resp.data?.ticketNumber ?? resp.data?.ticketId ?? '?';
+      toast(`${resp.data?.providerName ?? 'Tracker'} ticket created: ${n}`);
+      if (resp.data?.ticketUrl) window.open(resp.data.ticketUrl, '_blank');
+    } else {
+      toast(`Submit failed: ${resp.error}`);
+    }
   });
 
   // clipboard paste

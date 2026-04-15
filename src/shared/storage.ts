@@ -1,4 +1,6 @@
-import type { Session, SnapshotBlob, RecordingOptions, OtrsConfig } from './types';
+import type { Session, SnapshotBlob, RecordingOptions } from './types';
+import type { TrackerSettings } from './trackers/settings';
+import { DEFAULT_TRACKER_SETTINGS } from './trackers/settings';
 import { DEFAULT_OPTIONS } from './types';
 
 /**
@@ -9,7 +11,8 @@ import { DEFAULT_OPTIONS } from './types';
 
 const SESSION_KEY = 'activeSession';
 const OPTIONS_KEY = 'options';
-const OTRS_KEY = 'otrs';
+const TRACKER_KEY = 'trackerSettings';
+const LEGACY_OTRS_KEY = 'otrs';
 const DB_NAME = 'd365fo-repro';
 const DB_VERSION = 1;
 const STORE_SNAP = 'snapshots';
@@ -39,13 +42,31 @@ export async function setOptions(opts: RecordingOptions): Promise<void> {
   await chrome.storage.local.set({ [OPTIONS_KEY]: opts });
 }
 
-export async function getOtrsConfig(): Promise<OtrsConfig | null> {
-  const out = await chrome.storage.local.get(OTRS_KEY);
-  return (out[OTRS_KEY] as OtrsConfig | undefined) ?? null;
+export async function getTrackerSettings(): Promise<TrackerSettings> {
+  const out = await chrome.storage.local.get([TRACKER_KEY, LEGACY_OTRS_KEY]);
+  const stored = out[TRACKER_KEY] as TrackerSettings | undefined;
+  if (stored) {
+    return {
+      activeProviderId: stored.activeProviderId ?? null,
+      providerConfigs: stored.providerConfigs ?? {},
+    };
+  }
+  // One-time migration from the flat otrs key
+  const legacy = out[LEGACY_OTRS_KEY] as Record<string, unknown> | undefined;
+  if (legacy) {
+    const migrated: TrackerSettings = {
+      activeProviderId: 'otrs',
+      providerConfigs: { otrs: legacy },
+    };
+    await chrome.storage.local.set({ [TRACKER_KEY]: migrated });
+    await chrome.storage.local.remove(LEGACY_OTRS_KEY);
+    return migrated;
+  }
+  return { ...DEFAULT_TRACKER_SETTINGS };
 }
 
-export async function setOtrsConfig(cfg: OtrsConfig): Promise<void> {
-  await chrome.storage.local.set({ [OTRS_KEY]: cfg });
+export async function setTrackerSettings(settings: TrackerSettings): Promise<void> {
+  await chrome.storage.local.set({ [TRACKER_KEY]: settings });
 }
 
 // ----- IndexedDB for snapshots -----

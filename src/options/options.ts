@@ -1,5 +1,7 @@
-import { getOtrsConfig, setOtrsConfig, getOptions, setOptions } from '@shared/storage';
-import type { OtrsConfig, RecordingOptions } from '@shared/types';
+import { getOptions, setOptions, getTrackerSettings, setTrackerSettings } from '@shared/storage';
+import type { RecordingOptions } from '@shared/types';
+import { TRACKER_PROVIDERS, getProvider, applyDefaults } from '@shared/trackers';
+import type { ConfigSchema, ConfigField, TrackerProvider } from '@shared/trackers';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 
@@ -9,31 +11,189 @@ function setStatus(msg: string, error = false): void {
   el.style.color = error ? '#b91c1c' : '#047857';
 }
 
-async function loadOtrs(): Promise<void> {
-  const cfg = await getOtrsConfig();
-  if (!cfg) return;
-  ($<HTMLInputElement>('otrs-url')).value = cfg.baseUrl;
-  ($<HTMLInputElement>('otrs-webservice')).value = cfg.webservice;
-  ($<HTMLInputElement>('otrs-user')).value = cfg.user;
-  ($<HTMLInputElement>('otrs-password')).value = cfg.password;
-  ($<HTMLInputElement>('otrs-queue')).value = cfg.queue;
-  ($<HTMLInputElement>('otrs-type')).value = cfg.type;
-  ($<HTMLSelectElement>('otrs-priority')).value = cfg.priority;
-  ($<HTMLInputElement>('otrs-state')).value = cfg.state;
+// ----------------- tracker provider UI -----------------
+
+function providerInputType(type: ConfigField['type']): string {
+  switch (type) {
+    case 'password':
+      return 'password';
+    case 'url':
+      return 'url';
+    case 'number':
+      return 'number';
+    case 'boolean':
+      return 'checkbox';
+    default:
+      return 'text';
+  }
 }
 
-function readOtrsForm(): OtrsConfig {
-  return {
-    baseUrl: ($<HTMLInputElement>('otrs-url')).value.trim(),
-    webservice: ($<HTMLInputElement>('otrs-webservice')).value.trim(),
-    user: ($<HTMLInputElement>('otrs-user')).value.trim(),
-    password: ($<HTMLInputElement>('otrs-password')).value,
-    queue: ($<HTMLInputElement>('otrs-queue')).value.trim(),
-    type: ($<HTMLInputElement>('otrs-type')).value.trim() || 'Incident',
-    priority: ($<HTMLSelectElement>('otrs-priority')).value,
-    state: ($<HTMLInputElement>('otrs-state')).value.trim() || 'new',
-  };
+function renderProviderForm(provider: TrackerProvider, config: Record<string, unknown>): void {
+  const form = $<HTMLFormElement>('provider-form');
+  form.innerHTML = '';
+
+  const schema = provider.getConfigSchema();
+  $<HTMLParagraphElement>('provider-intro').textContent = schema.intro ?? '';
+  const docs = $<HTMLAnchorElement>('provider-docs');
+  if (schema.docsUrl) {
+    docs.href = schema.docsUrl;
+    docs.hidden = false;
+  } else {
+    docs.hidden = true;
+  }
+
+  for (const field of schema.fields) {
+    const label = document.createElement('label');
+    const span = document.createElement('span');
+    span.textContent = field.label + (field.required ? ' *' : '');
+    label.append(span);
+
+    let input: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
+    if (field.type === 'select') {
+      const sel = document.createElement('select');
+      for (const opt of field.options ?? []) {
+        const o = document.createElement('option');
+        o.value = opt.value;
+        o.textContent = opt.label;
+        sel.append(o);
+      }
+      input = sel;
+    } else if (field.type === 'textarea') {
+      input = document.createElement('textarea');
+    } else {
+      const inp = document.createElement('input');
+      inp.type = providerInputType(field.type);
+      if (field.placeholder) inp.placeholder = field.placeholder;
+      input = inp;
+    }
+    input.name = field.key;
+    input.id = `field-${field.key}`;
+
+    const current = config[field.key];
+    if (input instanceof HTMLInputElement && input.type === 'checkbox') {
+      input.checked = current === true || current === 'true';
+    } else if (current !== undefined && current !== null) {
+      (input as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement).value = String(current);
+    }
+    label.append(input);
+
+    if (field.hint) {
+      const hint = document.createElement('small');
+      hint.className = 'hint';
+      hint.textContent = field.hint;
+      label.append(hint);
+    }
+    form.append(label);
+  }
 }
+
+function readProviderForm(schema: ConfigSchema): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const field of schema.fields) {
+    const el = document.getElementById(`field-${field.key}`) as
+      | HTMLInputElement
+      | HTMLSelectElement
+      | HTMLTextAreaElement
+      | null;
+    if (!el) continue;
+    if (el instanceof HTMLInputElement && el.type === 'checkbox') {
+      out[field.key] = el.checked;
+    } else if (el instanceof HTMLInputElement && el.type === 'number') {
+      out[field.key] = el.value === '' ? undefined : Number(el.value);
+    } else {
+      out[field.key] = el.value;
+    }
+  }
+  return out;
+}
+
+async function loadProviderUi(): Promise<void> {
+  const select = $<HTMLSelectElement>('provider-select');
+  select.innerHTML = '';
+  for (const p of TRACKER_PROVIDERS) {
+    const o = document.createElement('option');
+    o.value = p.id;
+    o.textContent = p.displayName;
+    select.append(o);
+  }
+  const settings = await getTrackerSettings();
+  const initialId = settings.activeProviderId ?? TRACKER_PROVIDERS[0]!.id;
+  select.value = initialId;
+  showProvider(initialId, settings.providerConfigs[initialId] ?? {});
+  select.addEventListener('change', async () => {
+    const s = await getTrackerSettings();
+    showProvider(select.value, s.providerConfigs[select.value] ?? {});
+  });
+}
+
+function showProvider(id: string, config: Record<string, unknown>): void {
+  const provider = getProvider(id);
+  if (!provider) return;
+  const schema = provider.getConfigSchema();
+  const merged = applyDefaults(schema, config);
+  renderProviderForm(provider, merged);
+  updateActivateButton();
+}
+
+async function updateActivateButton(): Promise<void> {
+  const settings = await getTrackerSettings();
+  const selected = $<HTMLSelectElement>('provider-select').value;
+  const btn = $<HTMLButtonElement>('btn-activate-provider');
+  if (settings.activeProviderId === selected) {
+    btn.textContent = 'Currently active';
+    btn.disabled = true;
+  } else {
+    btn.textContent = 'Make active';
+    btn.disabled = false;
+  }
+}
+
+async function saveProvider(): Promise<void> {
+  const id = $<HTMLSelectElement>('provider-select').value;
+  const provider = getProvider(id);
+  if (!provider) return;
+  const config = readProviderForm(provider.getConfigSchema());
+  const v = provider.validateConfig(config as Record<string, unknown>);
+  if (!v.ok) {
+    const errs = Object.values(v.errors ?? {}).join('; ');
+    setStatus(`Validation failed: ${errs}`, true);
+    return;
+  }
+  const settings = await getTrackerSettings();
+  settings.providerConfigs[id] = config;
+  if (!settings.activeProviderId) settings.activeProviderId = id;
+  await setTrackerSettings(settings);
+  setStatus(`${provider.displayName} settings saved.`);
+  await updateActivateButton();
+}
+
+async function activateProvider(): Promise<void> {
+  const id = $<HTMLSelectElement>('provider-select').value;
+  const settings = await getTrackerSettings();
+  settings.activeProviderId = id;
+  // Make sure there is at least an empty config so submit() finds one
+  if (!settings.providerConfigs[id]) settings.providerConfigs[id] = {};
+  await setTrackerSettings(settings);
+  setStatus(`${getProvider(id)?.displayName ?? id} is now the active tracker.`);
+  await updateActivateButton();
+}
+
+async function testProvider(): Promise<void> {
+  const id = $<HTMLSelectElement>('provider-select').value;
+  const provider = getProvider(id);
+  if (!provider) return;
+  const config = readProviderForm(provider.getConfigSchema());
+  setStatus('Testing connection...');
+  try {
+    const r = await provider.testConnection(config as Record<string, unknown>);
+    if (r.ok) setStatus(`${provider.displayName}: ${r.message}`);
+    else setStatus(`${provider.displayName}: ${r.message}`, true);
+  } catch (e) {
+    setStatus(`Test failed: ${(e as Error).message}`, true);
+  }
+}
+
+// ----------------- recording options -----------------
 
 async function loadOptions(): Promise<void> {
   const opts = await getOptions();
@@ -48,44 +208,48 @@ function readOptionsForm(): RecordingOptions {
     autoSnapOnNavigate: ($<HTMLInputElement>('opt-auto-snap-nav')).checked,
     autoSnapOnError: ($<HTMLInputElement>('opt-auto-snap-error')).checked,
     autoSnapOnClick: ($<HTMLInputElement>('opt-auto-snap-click')).checked,
-    maxSnapshotsPerSession: Math.max(10, Math.min(1000, parseInt(($<HTMLInputElement>('opt-max-snaps')).value, 10) || 200)),
+    maxSnapshotsPerSession: Math.max(
+      10,
+      Math.min(1000, parseInt(($<HTMLInputElement>('opt-max-snaps')).value, 10) || 200),
+    ),
   };
 }
 
+// ----------------- keyboard shortcuts (also handles issue #20) -----------------
+
+async function loadShortcuts(): Promise<void> {
+  const list = $<HTMLUListElement>('shortcuts-list');
+  list.innerHTML = '';
+  try {
+    const cmds = await chrome.commands.getAll();
+    for (const c of cmds) {
+      const li = document.createElement('li');
+      const shortcut = c.shortcut || '(not set)';
+      const warn = c.shortcut ? '' : ' ⚠';
+      li.innerHTML = `<kbd>${escapeHtml(shortcut)}</kbd>${warn} — ${escapeHtml(c.description ?? c.name ?? '')}`;
+      list.append(li);
+    }
+  } catch (e) {
+    const li = document.createElement('li');
+    li.textContent = `Unable to read shortcuts: ${(e as Error).message}`;
+    list.append(li);
+  }
+}
+
+function escapeHtml(s: string): string {
+  return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
+}
+
+// ----------------- wire up -----------------
+
 document.addEventListener('DOMContentLoaded', () => {
-  void loadOtrs();
+  void loadProviderUi();
   void loadOptions();
+  void loadShortcuts();
 
-  $<HTMLFormElement>('otrs-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    try {
-      await setOtrsConfig(readOtrsForm());
-      setStatus('OTRS settings saved.');
-    } catch (err) {
-      setStatus((err as Error).message, true);
-    }
-  });
-
-  $<HTMLButtonElement>('btn-test').addEventListener('click', async () => {
-    const cfg = readOtrsForm();
-    if (!cfg.baseUrl) { setStatus('Base URL is required', true); return; }
-    try {
-      const origin = new URL(cfg.baseUrl).origin + '/*';
-      const granted = await chrome.permissions.request({ origins: [origin] });
-      if (!granted) { setStatus('Host permission denied — cannot reach OTRS', true); return; }
-      const url = `${cfg.baseUrl.replace(/\/$/, '')}/otrs/nph-genericinterface.pl/Webservice/${encodeURIComponent(cfg.webservice)}/SessionCreate`;
-      const resp = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ UserLogin: cfg.user, Password: cfg.password }),
-      });
-      const text = await resp.text();
-      if (resp.ok) setStatus(`Reached OTRS (HTTP ${resp.status}). Response: ${text.slice(0, 120)}`);
-      else setStatus(`OTRS responded HTTP ${resp.status}: ${text.slice(0, 200)}`, true);
-    } catch (err) {
-      setStatus(`Test failed: ${(err as Error).message}`, true);
-    }
-  });
+  $<HTMLButtonElement>('btn-save-provider').addEventListener('click', () => void saveProvider());
+  $<HTMLButtonElement>('btn-test-provider').addEventListener('click', () => void testProvider());
+  $<HTMLButtonElement>('btn-activate-provider').addEventListener('click', () => void activateProvider());
 
   $<HTMLButtonElement>('btn-save-recording').addEventListener('click', async () => {
     try {

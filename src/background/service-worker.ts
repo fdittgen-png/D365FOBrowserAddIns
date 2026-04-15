@@ -18,7 +18,9 @@ import type {
 } from '@shared/types';
 import { EXT_VERSION } from '@shared/types';
 import { exportSessionAsZip } from '@shared/exporter';
-import { submitToOtrs } from '@shared/otrs';
+import { getTrackerSettings } from '@shared/storage';
+import { getProvider, TRACKER_PROVIDERS } from '@shared/trackers';
+import { collectAttachments } from '@shared/trackers/common';
 
 // ----------------- capture throttle -----------------
 
@@ -313,15 +315,36 @@ onMessage(async (msg: Message, sender): Promise<MessageResponse> => {
       }
     }
 
-    case 'REVIEW_SUBMIT_OTRS': {
+    case 'REVIEW_SUBMIT_TRACKER': {
       const session = await getArchivedSession(msg.sessionId);
       if (!session) return { ok: false, error: 'not-found' };
       try {
-        const result = await submitToOtrs(session);
-        return { ok: true, data: result };
+        const settings = await getTrackerSettings();
+        if (!settings.activeProviderId) throw new Error('No tracker selected. Open Settings and pick one.');
+        const provider = getProvider(settings.activeProviderId);
+        if (!provider) throw new Error(`Unknown tracker provider: ${settings.activeProviderId}`);
+        const config = settings.providerConfigs[provider.id] ?? {};
+        const validation = provider.validateConfig(config as Record<string, unknown>);
+        if (!validation.ok) throw new Error(`Invalid ${provider.displayName} config: ${Object.values(validation.errors ?? {}).join('; ')}`);
+        const { attachments } = await collectAttachments(session);
+        const result = await provider.submit(session, config as Record<string, unknown>, attachments);
+        return { ok: true, data: { providerId: provider.id, providerName: provider.displayName, ...result } };
       } catch (e) {
         return { ok: false, error: (e as Error).message };
       }
+    }
+
+    case 'REVIEW_GET_TRACKER_INFO': {
+      const settings = await getTrackerSettings();
+      const active = settings.activeProviderId ? getProvider(settings.activeProviderId) : undefined;
+      return {
+        ok: true,
+        data: {
+          activeProviderId: settings.activeProviderId,
+          activeProviderName: active?.displayName ?? null,
+          providers: TRACKER_PROVIDERS.map((p) => ({ id: p.id, displayName: p.displayName })),
+        },
+      };
     }
 
     default:

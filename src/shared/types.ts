@@ -119,17 +119,6 @@ export const DEFAULT_OPTIONS: RecordingOptions = {
   maxSnapshotsPerSession: 200,
 };
 
-export interface OtrsConfig {
-  baseUrl: string;
-  webservice: string;
-  user: string;
-  password: string;
-  queue: string;
-  type: string;
-  priority: string;
-  state: string;
-}
-
 export interface SnapshotBlob {
   id: string;
   sessionId: string;
@@ -165,7 +154,8 @@ export type Message =
   | { type: 'REVIEW_GET_SNAPSHOT'; snapshotId: string }
   | { type: 'REVIEW_ADD_PASTED_IMAGE'; sessionId: string; pngDataUrl: string; note?: string }
   | { type: 'REVIEW_EXPORT_XML'; sessionId: string }
-  | { type: 'REVIEW_SUBMIT_OTRS'; sessionId: string }
+  | { type: 'REVIEW_SUBMIT_TRACKER'; sessionId: string }
+  | { type: 'REVIEW_GET_TRACKER_INFO' }
   // background -> content
   | { type: 'STATE_UPDATE'; state: SessionState; sessionId?: string; stepCount: number };
 
