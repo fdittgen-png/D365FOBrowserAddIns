@@ -15,6 +15,7 @@ import {
   ensureHostPermission,
   fetchWithTimeout,
   resolveTimeout,
+  sanitizeTrackerError,
 } from './common';
 
 export interface OtrsConfig extends Record<string, unknown> {
@@ -90,8 +91,8 @@ export class OtrsProvider implements TrackerProvider<OtrsConfig> {
         resolveTimeout(config),
       );
       const text = await resp.text();
-      if (resp.ok) return { ok: true, message: `HTTP ${resp.status} — ${truncate(text, 120)}` };
-      return { ok: false, message: `HTTP ${resp.status} — ${truncate(text, 200)}` };
+      if (resp.ok) return { ok: true, message: `HTTP ${resp.status} — ${sanitizeTrackerError(text, 120)}` };
+      return { ok: false, message: `HTTP ${resp.status} — ${sanitizeTrackerError(text, 200)}` };
     } catch (e) {
       return { ok: false, message: (e as Error).message };
     }
@@ -140,7 +141,7 @@ export class OtrsProvider implements TrackerProvider<OtrsConfig> {
     } catch {
       parsed = { raw: text };
     }
-    if (!resp.ok) throw new Error(`OTRS returned ${resp.status}: ${truncate(text, 300)}`);
+    if (!resp.ok) throw new Error(`OTRS returned ${resp.status}: ${sanitizeTrackerError(text, 300)}`);
     const obj = parsed as {
       TicketNumber?: string;
       TicketID?: string;
@@ -158,6 +159,3 @@ export class OtrsProvider implements TrackerProvider<OtrsConfig> {
   }
 }
 
-function truncate(s: string, n: number): string {
-  return s.length > n ? s.slice(0, n) + '…' : s;
-}

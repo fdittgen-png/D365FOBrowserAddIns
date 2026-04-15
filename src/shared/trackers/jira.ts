@@ -14,6 +14,7 @@ import {
   ensureHostPermission,
   fetchWithTimeout,
   resolveTimeout,
+  sanitizeTrackerError,
 } from './common';
 
 export interface JiraConfig extends Record<string, unknown> {
@@ -84,7 +85,7 @@ export class JiraProvider implements TrackerProvider<JiraConfig> {
           return { ok: true, message: `HTTP ${resp.status}` };
         }
       }
-      return { ok: false, message: `HTTP ${resp.status} — ${truncate(text, 200)}` };
+      return { ok: false, message: `HTTP ${resp.status} — ${sanitizeTrackerError(text, 200)}` };
     } catch (e) {
       return { ok: false, message: (e as Error).message };
     }
@@ -118,7 +119,7 @@ export class JiraProvider implements TrackerProvider<JiraConfig> {
       timeout,
     );
     const createText = await createResp.text();
-    if (!createResp.ok) throw new Error(`Jira create failed: HTTP ${createResp.status} — ${truncate(createText, 300)}`);
+    if (!createResp.ok) throw new Error(`Jira create failed: HTTP ${createResp.status} — ${sanitizeTrackerError(createText, 300)}`);
     const created = JSON.parse(createText) as { id?: string; key?: string };
     if (!created.key) throw new Error('Jira create returned no key');
 
@@ -140,7 +141,7 @@ export class JiraProvider implements TrackerProvider<JiraConfig> {
         );
         if (!r.ok) {
           const t = await r.text();
-          throw new Error(`attachment ${att.filename} failed: HTTP ${r.status} — ${truncate(t, 200)}`);
+          throw new Error(`attachment ${att.filename} failed: HTTP ${r.status} — ${sanitizeTrackerError(t, 200)}`);
         }
       }
     } catch (e) {
@@ -173,9 +174,6 @@ function trim(u: string): string {
   return u.replace(/\/$/, '');
 }
 
-function truncate(s: string, n: number): string {
-  return s.length > n ? s.slice(0, n) + '…' : s;
-}
 
 /**
  * Convert a plain-text block to a minimal Atlassian Document Format tree.

@@ -117,6 +117,30 @@ export function bytesToBase64(bytes: Uint8Array): string {
 }
 
 /**
+ * Strip secrets from a response body snippet before surfacing it in a
+ * user-facing error message. Providers often echo parts of the request on
+ * error, and that echo can contain Authorization headers, passwords, API
+ * tokens, or PATs. We redact the common patterns and truncate to a safe
+ * length so the final toast is short and screenshot-safe.
+ */
+export function sanitizeTrackerError(raw: string, maxLength = 300): string {
+  const redacted = raw
+    // Redact known JSON credential fields first so the Authorization sweep
+    // doesn't obliterate surrounding structure.
+    .replace(/"password"\s*:\s*"[^"]*"/gi, '"password":"***"')
+    .replace(/"apiToken"\s*:\s*"[^"]*"/gi, '"apiToken":"***"')
+    .replace(/"pat"\s*:\s*"[^"]*"/gi, '"pat":"***"')
+    .replace(/"token"\s*:\s*"[^"]*"/gi, '"token":"***"')
+    // Redact entire Authorization header lines (everything after the colon up
+    // to end-of-line or end-of-JSON-object).
+    .replace(/Authorization\s*:\s*[^\r\n}]+/gi, 'Authorization: ***')
+    // Redact stray Bearer / Basic tokens not inside an Authorization header.
+    .replace(/\bBearer\s+[A-Za-z0-9._\-~+/=]+/g, 'Bearer ***')
+    .replace(/\bBasic\s+[A-Za-z0-9+/=]+/g, 'Basic ***');
+  return redacted.length > maxLength ? redacted.slice(0, maxLength) + '…' : redacted;
+}
+
+/**
  * Default timeout applied to every tracker fetch call. Providers can override
  * via a per-config `timeoutMs` field surfaced through their ConfigSchema.
  * Capped at 120 s so a misconfigured value can't hold the service worker

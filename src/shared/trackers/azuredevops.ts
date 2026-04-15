@@ -14,6 +14,7 @@ import {
   ensureHostPermission,
   fetchWithTimeout,
   resolveTimeout,
+  sanitizeTrackerError,
 } from './common';
 
 export interface AzureDevOpsConfig extends Record<string, unknown> {
@@ -75,7 +76,7 @@ export class AzureDevOpsProvider implements TrackerProvider<AzureDevOpsConfig> {
           return { ok: true, message: `HTTP ${resp.status}` };
         }
       }
-      return { ok: false, message: `HTTP ${resp.status} — ${truncate(text, 200)}` };
+      return { ok: false, message: `HTTP ${resp.status} — ${sanitizeTrackerError(text, 200)}` };
     } catch (e) {
       return { ok: false, message: (e as Error).message };
     }
@@ -101,7 +102,7 @@ export class AzureDevOpsProvider implements TrackerProvider<AzureDevOpsConfig> {
         timeout,
       );
       const text = await resp.text();
-      if (!resp.ok) throw new Error(`Attachment upload failed for ${att.filename}: HTTP ${resp.status} — ${truncate(text, 200)}`);
+      if (!resp.ok) throw new Error(`Attachment upload failed for ${att.filename}: HTTP ${resp.status} — ${sanitizeTrackerError(text, 200)}`);
       const parsed = JSON.parse(text) as { url?: string };
       if (!parsed.url) throw new Error(`Attachment upload returned no url for ${att.filename}`);
       uploaded.push({ url: parsed.url, name: att.filename });
@@ -149,7 +150,7 @@ export class AzureDevOpsProvider implements TrackerProvider<AzureDevOpsConfig> {
       timeout,
     );
     const text = await resp.text();
-    if (!resp.ok) throw new Error(`Azure DevOps create failed: HTTP ${resp.status} — ${truncate(text, 300)}`);
+    if (!resp.ok) throw new Error(`Azure DevOps create failed: HTTP ${resp.status} — ${sanitizeTrackerError(text, 300)}`);
     const parsed = JSON.parse(text) as { id?: number; _links?: { html?: { href?: string } } };
     return {
       ticketId: parsed.id != null ? String(parsed.id) : undefined,
@@ -168,9 +169,6 @@ function trim(u: string): string {
   return u.replace(/\/$/, '');
 }
 
-function truncate(s: string, n: number): string {
-  return s.length > n ? s.slice(0, n) + '…' : s;
-}
 
 function escapeHtml(s: string): string {
   return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
