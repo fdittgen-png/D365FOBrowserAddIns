@@ -59,7 +59,13 @@ if (typeof globalThis.crypto === 'undefined' || typeof globalThis.crypto.getRand
 
 // Use fake-indexeddb for storage tests that touch IDB
 try {
-  await import('fake-indexeddb/auto');
+  // Dynamic import path to avoid hard-coding the subpath export which some
+  // package.json configurations reject; fall back to the root module.
+  await import(/* @vite-ignore */ 'fake-indexeddb/auto' as string).catch(async () => {
+    const mod = (await import('fake-indexeddb')) as { indexedDB: IDBFactory; IDBKeyRange: typeof IDBKeyRange };
+    (globalThis as unknown as { indexedDB: IDBFactory }).indexedDB = mod.indexedDB;
+    (globalThis as unknown as { IDBKeyRange: typeof IDBKeyRange }).IDBKeyRange = mod.IDBKeyRange;
+  });
 } catch {
   // module optional — tests that need it will fail loudly on first use
 }

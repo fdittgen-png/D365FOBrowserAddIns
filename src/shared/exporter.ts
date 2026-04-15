@@ -150,20 +150,15 @@ export async function exportSessionAsZip(session: Session): Promise<{ url: strin
 
   // Build deterministic filenames per step index
   const attachmentMap = new Map<string, string>(); // snapshotId -> filename
-  let snapCounter = 0;
   let pastedCounter = 0;
   session.steps.forEach((step, i) => {
     if ('screenshotId' in step && step.screenshotId) {
       const snap = byId.get(step.screenshotId);
       if (!snap) return;
-      let name: string;
-      if (step.kind === 'pasted-img') {
-        pastedCounter++;
-        name = `screenshots/pasted-${pad(pastedCounter, 2)}.png`;
-      } else {
-        snapCounter++;
-        name = `screenshots/step-${pad(i + 1, 3)}.png`;
-      }
+      const name =
+        step.kind === 'pasted-img'
+          ? `screenshots/pasted-${pad(++pastedCounter, 2)}.png`
+          : `screenshots/step-${pad(i + 1, 3)}.png`;
       attachmentMap.set(step.screenshotId, name);
     }
   });

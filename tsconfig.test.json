@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["chrome", "node"],
+    "module": "ESNext",
+    "moduleResolution": "bundler"
+  },
+  "include": ["tests/**/*.ts", "src/**/*.ts", "vitest.config.ts"]
+}

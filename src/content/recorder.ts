@@ -292,6 +292,9 @@ onMessage(async (msg: Message): Promise<MessageResponse> => {
         if (overlay) { overlay.destroy(); overlay = null; }
       }
       return { ok: true };
+    case 'TRIGGER_OVERLAY_NOTE':
+      if (recording && overlay) overlay.promptNote();
+      return { ok: true };
     default:
       return { ok: true };
   }

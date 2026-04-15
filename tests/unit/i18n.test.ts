@@ -14,18 +14,18 @@ describe('t()', () => {
   });
 
   it('delegates to chrome.i18n.getMessage when present', () => {
-    (globalThis as unknown as { chrome: { i18n: { getMessage: (k: string) => string } } }).chrome = {
+    (globalThis as unknown as { chrome: unknown }).chrome = {
       ...(globalThis as unknown as { chrome: object }).chrome,
       i18n: { getMessage: vi.fn().mockImplementation((k: string) => (k === 'popupStart' ? 'Aufnahme starten' : '')) },
-    } as unknown as typeof globalThis.chrome;
+    };
     expect(t('popupStart')).toBe('Aufnahme starten');
   });
 
   it('falls back to key when getMessage returns empty string', () => {
-    (globalThis as unknown as { chrome: { i18n: { getMessage: () => string } } }).chrome = {
+    (globalThis as unknown as { chrome: unknown }).chrome = {
       ...(globalThis as unknown as { chrome: object }).chrome,
       i18n: { getMessage: () => '' },
-    } as unknown as typeof globalThis.chrome;
+    };
     expect(t('popupStart')).toBe('popupStart');
   });
 });
@@ -33,10 +33,10 @@ describe('t()', () => {
 describe('applyI18n', () => {
   beforeEach(() => {
     document.body.innerHTML = '';
-    (globalThis as unknown as { chrome: { i18n: { getMessage: (k: string) => string } } }).chrome = {
+    (globalThis as unknown as { chrome: unknown }).chrome = {
       ...(globalThis as unknown as { chrome: object }).chrome,
       i18n: { getMessage: (k: string) => ({ helloKey: 'Hello', placeKey: 'type here', ariaKey: 'close' } as Record<string, string>)[k] ?? '' },
-    } as unknown as typeof globalThis.chrome;
+    };
   });
 
   it('replaces textContent for data-i18n elements', () => {

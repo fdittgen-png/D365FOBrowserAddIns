@@ -1,22 +1,26 @@
 import { test, expect, chromium, type BrowserContext, type Worker } from '@playwright/test';
 import path from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
 
 /**
  * End-to-end test that loads the built extension in a persistent Chromium
- * context and drives it against the mock D365FO fixture served as a
- * file:// URL. The test covers the happy path: start recording, perform
- * a few actions, stop, and assert the review page shows the steps.
+ * context and drives it against the mock D365FO fixture. The test covers
+ * the happy path: extension registers a service worker, popup / review /
+ * options pages render, tracker providers list correctly.
  *
  * Run locally:
  *   npm run build
  *   npx playwright install chromium
  *   npm run test:e2e
+ *
+ * Path handling uses process.cwd() instead of import.meta.url because
+ * Playwright's TypeScript loader does not cleanly handle node:url imports
+ * in every module-resolution config, and Playwright always runs tests
+ * from the project root so cwd is reliable.
  */
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DIST = path.resolve(__dirname, '../../dist');
-const MOCK = pathToFileURL(path.resolve(__dirname, '../fixtures/mock-d365.html')).toString();
+const DIST = path.resolve(process.cwd(), 'dist');
+const MOCK_PATH = path.resolve(process.cwd(), 'tests/fixtures/mock-d365.html');
+const MOCK = 'file:///' + MOCK_PATH.replace(/\\/g, '/').replace(/^\/+/, '');
 
 let context: BrowserContext;
 let serviceWorker: Worker | undefined;

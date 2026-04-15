@@ -7,9 +7,8 @@ import {
   archiveSession,
   getArchivedSession,
   getOptions,
+  getTrackerSettings,
 } from '@shared/storage';
-// getOptions used both by snapshotAndAttach (auto-snap decisions) and
-// captureForTab (strategy selection) — same import covers both.
 import type {
   Message,
   MessageResponse,
@@ -20,7 +19,6 @@ import type {
 } from '@shared/types';
 import { EXT_VERSION } from '@shared/types';
 import { exportSessionAsZip } from '@shared/exporter';
-import { getTrackerSettings } from '@shared/storage';
 import { getProvider, TRACKER_PROVIDERS } from '@shared/trackers';
 import { collectAttachments } from '@shared/trackers/common';
 import { captureFullPage } from './full-page-capture';
@@ -375,7 +373,10 @@ onMessage(async (msg: Message, sender): Promise<MessageResponse> => {
       if (target) {
         for (const step of target.steps) {
           if ('screenshotId' in step && step.screenshotId === msg.snapshotId) {
-            (step as { note?: string }).note = `${step.note ? step.note + ' ' : ''}[redacted]`;
+            const current = (step as { note?: string }).note ?? '';
+            if (!current.includes('[redacted]')) {
+              (step as { note?: string }).note = current ? `${current} [redacted]` : '[redacted]';
+            }
           }
         }
         if (active && active.id === target.id) await setActiveSession(target);
@@ -476,11 +477,12 @@ chrome.commands.onCommand.addListener(async (command) => {
     }
     case 'add-note': {
       if (!session || session.state !== 'recording') return;
-      try {
-        await chrome.tabs.sendMessage(tab.id, { type: 'REQUEST_SNAPSHOT', reason: 'manual' } satisfies Message);
-      } catch { /* ignore */ }
-      // Actual note text prompt is handled inside content overlay.
-      await chrome.tabs.sendMessage(tab.id, { type: 'POPUP_GET_STATE' } satisfies Message).catch(() => undefined);
+      // The overlay owns the note modal. Ask the content script to open it;
+      // fail silently if the tab doesn't have a content script (the user
+      // pressed the shortcut from a non-D365FO tab while a session is live).
+      await chrome.tabs
+        .sendMessage(tab.id, { type: 'TRIGGER_OVERLAY_NOTE' } satisfies Message)
+        .catch(() => undefined);
       break;
     }
     case 'pause-resume': {

@@ -165,7 +165,8 @@ export type Message =
   | { type: 'REVIEW_SUBMIT_TRACKER'; sessionId: string }
   | { type: 'REVIEW_GET_TRACKER_INFO' }
   // background -> content
-  | { type: 'STATE_UPDATE'; state: SessionState; sessionId?: string; stepCount: number };
+  | { type: 'STATE_UPDATE'; state: SessionState; sessionId?: string; stepCount: number }
+  | { type: 'TRIGGER_OVERLAY_NOTE' };
 
 export interface MessageResponse<T = unknown> {
   ok: boolean;

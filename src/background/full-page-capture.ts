@@ -104,48 +104,47 @@ async function captureStitch(tabId: number): Promise<Blob> {
   const tab = await chrome.tabs.get(tabId);
   if (tab.windowId == null) throw new Error('tab has no window');
   const metrics = await getPageMetrics(tabId);
-  const tiles: Array<{ y: number; dataUrl: string }> = [];
+  const tiles: Array<{ y: number; bitmap: ImageBitmap }> = [];
   const steps = Math.ceil(metrics.totalHeight / metrics.viewportHeight);
+  if (steps === 0) throw new Error('page has no height to capture');
 
   try {
-    for (let i = 0; i < steps; i++) {
-      const y = i * metrics.viewportHeight;
-      await scrollTo(tabId, y, /* hideSticky */ i > 0);
-      await throttle();
-      const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
-      tiles.push({ y, dataUrl });
+    try {
+      for (let i = 0; i < steps; i++) {
+        const y = i * metrics.viewportHeight;
+        await scrollTo(tabId, y, /* hideSticky */ i > 0);
+        await throttle();
+        const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
+        const blob = await (await fetch(dataUrl)).blob();
+        const bitmap = await createImageBitmap(blob);
+        tiles.push({ y, bitmap });
+      }
+    } finally {
+      await restoreSticky(tabId).catch(() => undefined);
+      await scrollTo(tabId, 0, false).catch(() => undefined);
     }
+
+    if (tiles.length === 0) throw new Error('no tiles captured');
+    const tileWidth = tiles[0]!.bitmap.width;
+    const tileHeight = tiles[0]!.bitmap.height;
+    const dpr = metrics.devicePixelRatio;
+    const fullHeight = Math.ceil(metrics.totalHeight * dpr);
+    const canvas = new OffscreenCanvas(tileWidth, fullHeight);
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('no 2d context');
+
+    for (const tile of tiles) {
+      const yPx = Math.round(tile.y * dpr);
+      const remaining = fullHeight - yPx;
+      const drawHeight = Math.min(tileHeight, remaining);
+      ctx.drawImage(tile.bitmap, 0, 0, tileWidth, drawHeight, 0, yPx, tileWidth, drawHeight);
+    }
+
+    return await canvas.convertToBlob({ type: 'image/png' });
   } finally {
-    await restoreSticky(tabId).catch(() => undefined);
-    // Restore original scroll position
-    await scrollTo(tabId, 0, false).catch(() => undefined);
+    // Release bitmap memory even if stitching throws
+    for (const tile of tiles) tile.bitmap.close();
   }
-
-  // Stitch tiles into one image using OffscreenCanvas in the service worker.
-  const firstBlob = await (await fetch(tiles[0]!.dataUrl)).blob();
-  const firstBitmap = await createImageBitmap(firstBlob);
-  const tileWidth = firstBitmap.width;
-  const tileHeight = firstBitmap.height;
-  firstBitmap.close();
-
-  const dpr = metrics.devicePixelRatio;
-  const fullHeight = Math.ceil(metrics.totalHeight * dpr);
-  const fullWidth = tileWidth;
-  const canvas = new OffscreenCanvas(fullWidth, fullHeight);
-  const ctx = canvas.getContext('2d');
-  if (!ctx) throw new Error('no 2d context');
-
-  for (const tile of tiles) {
-    const blob = await (await fetch(tile.dataUrl)).blob();
-    const bitmap = await createImageBitmap(blob);
-    const yPx = Math.round(tile.y * dpr);
-    const remaining = fullHeight - yPx;
-    const drawHeight = Math.min(tileHeight, remaining);
-    ctx.drawImage(bitmap, 0, 0, fullWidth, drawHeight, 0, yPx, fullWidth, drawHeight);
-    bitmap.close();
-  }
-
-  return canvas.convertToBlob({ type: 'image/png' });
 }
 
 async function captureDebugger(tabId: number): Promise<Blob> {
