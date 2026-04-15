@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<reproReport xmlns="https://d365fo.repro/schema/v1" version="1" sessionId="ses_golden">
+  <meta>
+    <title>Golden fixture</title>
+    <severity>high</severity>
+    <startedAt>2023-11-14T22:13:20.000Z</startedAt>
+    <endedAt>2023-11-14T22:14:20.000Z</endedAt>
+    <extensionVersion>0.1.0</extensionVersion>
+    <tags>
+      <tag>golden</tag>
+      <tag>fixture</tag>
+    </tags>
+  </meta>
+  <environment>
+    <host>usmf.dynamics.com</host>
+    <tenant>usmf</tenant>
+    <company>USMF</company>
+    <language>en-us</language>
+    <userAgent>GoldenAgent/1.0</userAgent>
+    <initialUrl>https://usmf.dynamics.com/?cmp=USMF&amp;mi=LedgerJournalTable</initialUrl>
+  </environment>
+  <description>A deterministic fixture used by the schema regression test.</description>
+  <steps>
+    <step index="1" kind="navigate" ts="2023-11-14T22:13:21.000Z" id="st_1">
+      <formTitle>General journal entries</formTitle>
+      <menuItem>LedgerJournalTable</menuItem>
+      <company>USMF</company>
+      <url>https://usmf.dynamics.com/?cmp=USMF&amp;mi=LedgerJournalTable</url>
+      <attachment href="screenshots/step-001.png" type="image/png" />
+    </step>
+    <step index="2" kind="click" ts="2023-11-14T22:13:22.000Z" id="st_2">
+      <label>New</label>
+      <role>button</role>
+      <formTitle>General journal entries</formTitle>
+    </step>
+    <step index="3" kind="edit" ts="2023-11-14T22:13:23.000Z" id="st_3">
+      <fieldLabel>Journal name</fieldLabel>
+      <oldValue />
+      <newValue>GenJrn</newValue>
+      <formTitle>Journal voucher</formTitle>
+    </step>
+    <step index="4" kind="error" ts="2023-11-14T22:13:24.000Z" id="st_4">
+      <message>Account X is not valid for posting.</message>
+      <formTitle>Journal voucher</formTitle>
+      <attachment href="screenshots/step-004.png" type="image/png" />
+    </step>
+    <step index="5" kind="note" ts="2023-11-14T22:13:25.000Z" id="st_5">
+      <text>This is reproducible on every attempt.</text>
+    </step>
+  </steps>
+</reproReport>

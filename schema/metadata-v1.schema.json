@@ -1,0 +1,157 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://d365fo.repro/schema/v1/metadata.schema.json",
+  "title": "D365FO Repro Metadata (v1)",
+  "description": "Schema for metadata.json — the machine-readable session dump that ships alongside repro.xml in every export bundle.",
+  "type": "object",
+  "required": ["id", "tabId", "state", "startedAt", "title", "description", "severity", "tags", "environment", "steps"],
+  "properties": {
+    "id": { "type": "string" },
+    "tabId": { "type": "integer" },
+    "state": { "enum": ["idle", "recording", "paused", "stopped"] },
+    "startedAt": { "type": "integer" },
+    "endedAt": { "type": "integer" },
+    "title": { "type": "string" },
+    "description": { "type": "string" },
+    "severity": { "enum": ["low", "med", "high"] },
+    "tags": { "type": "array", "items": { "type": "string" } },
+    "environment": {
+      "type": "object",
+      "required": ["url", "host", "userAgent", "extensionVersion", "capturedAt"],
+      "properties": {
+        "url": { "type": "string" },
+        "host": { "type": "string" },
+        "tenant": { "type": "string" },
+        "company": { "type": "string" },
+        "legalEntity": { "type": "string" },
+        "language": { "type": "string" },
+        "userAgent": { "type": "string" },
+        "extensionVersion": { "type": "string" },
+        "capturedAt": { "type": "integer" }
+      }
+    },
+    "steps": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/step" }
+    }
+  },
+  "$defs": {
+    "step": {
+      "oneOf": [
+        { "$ref": "#/$defs/navigateStep" },
+        { "$ref": "#/$defs/clickStep" },
+        { "$ref": "#/$defs/editStep" },
+        { "$ref": "#/$defs/errorStep" },
+        { "$ref": "#/$defs/manualSnapStep" },
+        { "$ref": "#/$defs/noteStep" },
+        { "$ref": "#/$defs/pastedImgStep" }
+      ]
+    },
+    "baseStep": {
+      "type": "object",
+      "required": ["kind", "id", "ts"],
+      "properties": {
+        "id": { "type": "string" },
+        "ts": { "type": "integer" },
+        "note": { "type": "string" }
+      }
+    },
+    "navigateStep": {
+      "allOf": [
+        { "$ref": "#/$defs/baseStep" },
+        {
+          "properties": {
+            "kind": { "const": "navigate" },
+            "url": { "type": "string" },
+            "menuItem": { "type": "string" },
+            "formTitle": { "type": "string" },
+            "company": { "type": "string" },
+            "screenshotId": { "type": "string" }
+          },
+          "required": ["kind", "url"]
+        }
+      ]
+    },
+    "clickStep": {
+      "allOf": [
+        { "$ref": "#/$defs/baseStep" },
+        {
+          "properties": {
+            "kind": { "const": "click" },
+            "label": { "type": "string" },
+            "role": { "type": "string" },
+            "formTitle": { "type": "string" },
+            "screenshotId": { "type": "string" }
+          },
+          "required": ["kind", "label"]
+        }
+      ]
+    },
+    "editStep": {
+      "allOf": [
+        { "$ref": "#/$defs/baseStep" },
+        {
+          "properties": {
+            "kind": { "const": "edit" },
+            "fieldLabel": { "type": "string" },
+            "oldValue": { "type": "string" },
+            "newValue": { "type": "string" },
+            "formTitle": { "type": "string" }
+          },
+          "required": ["kind", "fieldLabel", "oldValue", "newValue"]
+        }
+      ]
+    },
+    "errorStep": {
+      "allOf": [
+        { "$ref": "#/$defs/baseStep" },
+        {
+          "properties": {
+            "kind": { "const": "error" },
+            "message": { "type": "string" },
+            "formTitle": { "type": "string" },
+            "screenshotId": { "type": "string" }
+          },
+          "required": ["kind", "message"]
+        }
+      ]
+    },
+    "manualSnapStep": {
+      "allOf": [
+        { "$ref": "#/$defs/baseStep" },
+        {
+          "properties": {
+            "kind": { "const": "manual-snap" },
+            "screenshotId": { "type": "string" },
+            "formTitle": { "type": "string" }
+          },
+          "required": ["kind", "screenshotId"]
+        }
+      ]
+    },
+    "noteStep": {
+      "allOf": [
+        { "$ref": "#/$defs/baseStep" },
+        {
+          "properties": {
+            "kind": { "const": "note" },
+            "text": { "type": "string" }
+          },
+          "required": ["kind", "text"]
+        }
+      ]
+    },
+    "pastedImgStep": {
+      "allOf": [
+        { "$ref": "#/$defs/baseStep" },
+        {
+          "properties": {
+            "kind": { "const": "pasted-img" },
+            "screenshotId": { "type": "string" }
+          },
+          "required": ["kind", "screenshotId"]
+        }
+      ]
+    }
+  }
+}

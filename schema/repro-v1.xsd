@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="https://d365fo.repro/schema/v1"
+           xmlns="https://d365fo.repro/schema/v1"
+           elementFormDefault="qualified"
+           version="1">
+
+  <xs:annotation>
+    <xs:documentation xml:lang="en">
+      Schema for the repro.xml document produced by D365FO Browser Add-Ins.
+      Every export bundle contains one &lt;reproReport&gt; root element with
+      metadata, environment, description, and an ordered list of steps.
+      See docs/repro-xml-schema.md for a walkthrough and examples.
+    </xs:documentation>
+  </xs:annotation>
+
+  <!-- Root -->
+  <xs:element name="reproReport">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="meta" type="MetaType"/>
+        <xs:element name="environment" type="EnvironmentType"/>
+        <xs:element name="description" type="xs:string" minOccurs="0"/>
+        <xs:element name="steps" type="StepsType"/>
+      </xs:sequence>
+      <xs:attribute name="version" type="xs:string" use="required"/>
+      <xs:attribute name="sessionId" type="xs:string" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- Meta -->
+  <xs:complexType name="MetaType">
+    <xs:sequence>
+      <xs:element name="title" type="xs:string"/>
+      <xs:element name="severity" type="SeverityType"/>
+      <xs:element name="startedAt" type="xs:dateTime"/>
+      <xs:element name="endedAt" type="xs:dateTime" minOccurs="0"/>
+      <xs:element name="extensionVersion" type="xs:string"/>
+      <xs:element name="tags" minOccurs="0">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="tag" type="xs:string" maxOccurs="unbounded"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:simpleType name="SeverityType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="low"/>
+      <xs:enumeration value="med"/>
+      <xs:enumeration value="high"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- Environment -->
+  <xs:complexType name="EnvironmentType">
+    <xs:sequence>
+      <xs:element name="host" type="xs:string" minOccurs="0"/>
+      <xs:element name="tenant" type="xs:string" minOccurs="0"/>
+      <xs:element name="company" type="xs:string" minOccurs="0"/>
+      <xs:element name="language" type="xs:string" minOccurs="0"/>
+      <xs:element name="userAgent" type="xs:string" minOccurs="0"/>
+      <xs:element name="initialUrl" type="xs:string" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- Steps -->
+  <xs:complexType name="StepsType">
+    <xs:sequence>
+      <xs:element name="step" type="StepType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- Each step carries all optional fields; kind selects which ones are relevant. -->
+  <xs:complexType name="StepType">
+    <xs:sequence>
+      <xs:element name="formTitle" type="xs:string" minOccurs="0"/>
+      <xs:element name="menuItem" type="xs:string" minOccurs="0"/>
+      <xs:element name="company" type="xs:string" minOccurs="0"/>
+      <xs:element name="url" type="xs:string" minOccurs="0"/>
+      <xs:element name="label" type="xs:string" minOccurs="0"/>
+      <xs:element name="role" type="xs:string" minOccurs="0"/>
+      <xs:element name="fieldLabel" type="xs:string" minOccurs="0"/>
+      <xs:element name="oldValue" type="xs:string" minOccurs="0"/>
+      <xs:element name="newValue" type="xs:string" minOccurs="0"/>
+      <xs:element name="message" type="xs:string" minOccurs="0"/>
+      <xs:element name="text" type="xs:string" minOccurs="0"/>
+      <xs:element name="note" type="xs:string" minOccurs="0"/>
+      <xs:element name="attachment" minOccurs="0" maxOccurs="unbounded">
+        <xs:complexType>
+          <xs:attribute name="href" type="xs:string" use="required"/>
+          <xs:attribute name="type" type="xs:string" use="required"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+    <xs:attribute name="index" type="xs:positiveInteger" use="required"/>
+    <xs:attribute name="kind" type="StepKindType" use="required"/>
+    <xs:attribute name="ts" type="xs:dateTime" use="required"/>
+    <xs:attribute name="id" type="xs:string" use="required"/>
+  </xs:complexType>
+
+  <xs:simpleType name="StepKindType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="navigate"/>
+      <xs:enumeration value="click"/>
+      <xs:enumeration value="edit"/>
+      <xs:enumeration value="error"/>
+      <xs:enumeration value="manual-snap"/>
+      <xs:enumeration value="note"/>
+      <xs:enumeration value="pasted-img"/>
+    </xs:restriction>
+  </xs:simpleType>
+</xs:schema>
