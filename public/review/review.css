@@ -39,3 +39,5 @@ kbd { font-family: ui-monospace, monospace; font-size: 11px; background:#f3f4f6;
 .step .controls button { padding: 3px 8px; font-size: 11px; }
 
 #toast { position:fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background:#111827; color:white; padding: 10px 16px; border-radius: 6px; font-size: 13px; z-index:10000; }
+.sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline:2px solid #2563eb; outline-offset:2px; }

@@ -24,3 +24,4 @@ button.danger:hover { background:#b91c1c; }
 footer { margin-top:10px; display:flex; justify-content:space-between; align-items:center; font-size:11px; color:#6b7280; }
 footer a { color:#2563eb; text-decoration:none; }
 footer a:hover { text-decoration:underline; }
+button:focus-visible, a:focus-visible { outline:2px solid #2563eb; outline-offset:2px; }

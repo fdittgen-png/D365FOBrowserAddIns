@@ -8,21 +8,24 @@
   <body>
     <header>
       <div class="title-block">
-        <input id="title" placeholder="Short title of the issue" />
+        <label class="sr-only" for="title">Issue title</label>
+        <input id="title" placeholder="Short title of the issue" aria-label="Issue title" />
         <div class="meta">
           <label>Severity
-            <select id="severity">
+            <select id="severity" aria-label="Issue severity">
               <option value="low">Low</option>
               <option value="med" selected>Medium</option>
               <option value="high">High</option>
             </select>
           </label>
-          <label>Tags <input id="tags" placeholder="comma separated" /></label>
+          <label>Tags
+            <input id="tags" placeholder="comma separated" aria-label="Tags, comma separated" />
+          </label>
         </div>
       </div>
       <div class="actions">
-        <button id="btn-export-xml" class="primary">Export XML bundle</button>
-        <button id="btn-submit-tracker">Submit to tracker</button>
+        <button id="btn-export-xml" type="button" class="primary">Export XML bundle</button>
+        <button id="btn-submit-tracker" type="button">Submit to tracker</button>
       </div>
     </header>
 

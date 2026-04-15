@@ -74,6 +74,9 @@ const CSS = `
   .note-modal.open { display: flex; }
   textarea { width:100%; min-height: 60px; box-sizing:border-box; resize: vertical;
              border:1px solid #d1d5db; border-radius:4px; padding:4px; font: inherit; font-size: 12px; }
+  button:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
+  textarea:focus-visible { outline: 2px solid #2563eb; outline-offset: 1px; }
+  .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
 `;
 
 export function mountOverlay(cb: OverlayCallbacks): OverlayHandle {
@@ -82,28 +85,30 @@ export function mountOverlay(cb: OverlayCallbacks): OverlayHandle {
   const root = host.attachShadow({ mode: 'closed' });
   root.innerHTML = `
     <style>${CSS}</style>
-    <div class="wrap">
-      <div class="header" id="header">
-        <span><span class="dot" id="dot"></span><span id="label">Idle</span></span>
-        <span class="count" id="count">0 steps</span>
+    <div class="wrap" role="region" aria-label="D365FO Repro Recorder controls">
+      <div class="header" id="header" role="toolbar" aria-label="Recorder header, drag to move">
+        <span><span class="dot" id="dot" aria-hidden="true"></span><span id="label">Idle</span></span>
+        <span class="count" id="count" aria-live="polite">0 steps</span>
       </div>
       <div class="body">
         <div class="row">
-          <button id="btn-snap">📸 Snap</button>
-          <button id="btn-note">📝 Note</button>
+          <button id="btn-snap" type="button" aria-label="Take a screenshot now">📸 Snap</button>
+          <button id="btn-note" type="button" aria-label="Add a note to the session">📝 Note</button>
         </div>
         <div class="row">
-          <button id="btn-pause">Pause</button>
-          <button id="btn-stop" class="danger">Stop</button>
+          <button id="btn-pause" type="button" aria-label="Pause recording">Pause</button>
+          <button id="btn-stop" class="danger" type="button" aria-label="Stop recording and open the review page">Stop</button>
         </div>
       </div>
-      <div class="note-modal" id="note-modal">
+      <div class="note-modal" id="note-modal" role="dialog" aria-modal="true" aria-label="Add a session note">
+        <label class="sr-only" for="note-text">Note text</label>
         <textarea id="note-text" placeholder="Describe what just happened..."></textarea>
         <div class="row">
-          <button id="note-cancel">Cancel</button>
-          <button id="note-save" class="primary">Save note</button>
+          <button id="note-cancel" type="button">Cancel</button>
+          <button id="note-save" class="primary" type="button">Save note</button>
         </div>
       </div>
+      <span class="sr-only" id="live-status" aria-live="polite"></span>
     </div>
   `;
 
@@ -121,6 +126,40 @@ export function mountOverlay(cb: OverlayCallbacks): OverlayHandle {
   const noteText = root.getElementById('note-text') as HTMLTextAreaElement;
   const noteCancel = root.getElementById('note-cancel') as HTMLButtonElement;
   const noteSave = root.getElementById('note-save') as HTMLButtonElement;
+  const liveStatus = root.getElementById('live-status') as HTMLElement;
+
+  let lastFocusedBeforeModal: HTMLElement | null = null;
+  function openNoteModal(): void {
+    lastFocusedBeforeModal = (document.activeElement as HTMLElement) ?? null;
+    noteModal.classList.add('open');
+    noteText.focus();
+  }
+  function closeNoteModal(): void {
+    noteModal.classList.remove('open');
+    if (lastFocusedBeforeModal && typeof lastFocusedBeforeModal.focus === 'function') {
+      lastFocusedBeforeModal.focus();
+    }
+  }
+  // Focus trap inside the note modal
+  noteModal.addEventListener('keydown', (ev) => {
+    if (!noteModal.classList.contains('open')) return;
+    if (ev.key === 'Escape') {
+      ev.preventDefault();
+      closeNoteModal();
+      return;
+    }
+    if (ev.key !== 'Tab') return;
+    const focusable = [noteText, noteCancel, noteSave];
+    const first = focusable[0]!;
+    const last = focusable[focusable.length - 1]!;
+    if (ev.shiftKey && document.activeElement === first) {
+      ev.preventDefault();
+      last.focus();
+    } else if (!ev.shiftKey && document.activeElement === last) {
+      ev.preventDefault();
+      first.focus();
+    }
+  });
 
   btnSnap.addEventListener('click', () => cb.onSnapshot());
   btnNote.addEventListener('click', () => handle.promptNote());
@@ -130,12 +169,12 @@ export function mountOverlay(cb: OverlayCallbacks): OverlayHandle {
   });
   btnStop.addEventListener('click', () => cb.onStop());
 
-  noteCancel.addEventListener('click', () => noteModal.classList.remove('open'));
+  noteCancel.addEventListener('click', () => closeNoteModal());
   noteSave.addEventListener('click', () => {
     const t = noteText.value.trim();
     if (t) cb.onAddNote(t);
     noteText.value = '';
-    noteModal.classList.remove('open');
+    closeNoteModal();
   });
 
   // --- drag handling (persist position in session storage) ---
@@ -166,22 +205,25 @@ export function mountOverlay(cb: OverlayCallbacks): OverlayHandle {
         dot.classList.add('recording');
         label.textContent = 'Recording';
         btnPause.textContent = 'Pause';
+        btnPause.setAttribute('aria-label', 'Pause recording');
       } else if (state === 'paused') {
         header.classList.add('paused');
         dot.classList.add('paused');
         label.textContent = 'Paused';
         btnPause.textContent = 'Resume';
+        btnPause.setAttribute('aria-label', 'Resume recording');
       } else {
         label.textContent = 'Idle';
       }
       count.textContent = `${stepCount} step${stepCount === 1 ? '' : 's'}`;
+      // Announce state changes to assistive tech
+      liveStatus.textContent = `Recorder ${label.textContent}, ${count.textContent}`;
     },
     destroy() {
       host.remove();
     },
     promptNote() {
-      noteModal.classList.add('open');
-      noteText.focus();
+      openNoteModal();
     },
   };
   return handle;
