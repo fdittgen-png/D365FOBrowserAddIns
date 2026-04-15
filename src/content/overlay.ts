@@ -49,6 +49,9 @@ const CSS = `
   .dot.recording { background:#dc2626; animation: pulse 1.3s infinite; }
   .dot.paused    { background:#f59e0b; }
   @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity: .35; } }
+  @media (prefers-reduced-motion: reduce) {
+    .dot.recording { animation: none !important; }
+  }
   .body { padding: 8px 10px; display:flex; flex-direction:column; gap:6px; font-size:12px; }
   .row { display:flex; gap:6px; }
   button {
@@ -188,7 +191,8 @@ export function mountOverlay(cb: OverlayCallbacks, opts: OverlayMountOptions = {
 
   // --- drag handling (persist position in session storage) ---
   let dragging = false;
-  let offX = 0, offY = 0;
+  let offX = 0,
+    offY = 0;
   header.addEventListener('mousedown', (e) => {
     dragging = true;
     const rect = host.getBoundingClientRect();
@@ -203,7 +207,9 @@ export function mountOverlay(cb: OverlayCallbacks, opts: OverlayMountOptions = {
     host.style.top = `${e.clientY - offY}px`;
     host.style.right = 'auto';
   });
-  window.addEventListener('mouseup', () => { dragging = false; });
+  window.addEventListener('mouseup', () => {
+    dragging = false;
+  });
 
   // Expose the shadow root via the host reference's __testShadow__ field
   // when the caller asked for open mode. Never set in production.

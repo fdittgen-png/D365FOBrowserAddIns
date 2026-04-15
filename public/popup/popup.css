@@ -1,5 +1,27 @@
-:root { color-scheme: light dark; font-family: system-ui, sans-serif; }
-body { width: 300px; margin: 0; padding: 12px; }
+:root {
+  color-scheme: light dark;
+  font-family: system-ui, sans-serif;
+  --bg: #ffffff;
+  --fg: #111827;
+  --muted: #6b7280;
+  --border: #e5e7eb;
+  --card-bg: #f9fafb;
+  --accent: #2563eb;
+  --accent-fg: #ffffff;
+  --danger: #dc2626;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0b1220;
+    --fg: #e5e7eb;
+    --muted: #9ca3af;
+    --border: #1f2937;
+    --card-bg: #111827;
+    --accent: #3b82f6;
+    --danger: #ef4444;
+  }
+}
+body { width: 300px; margin: 0; padding: 12px; background: var(--bg); color: var(--fg); }
 header { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
 h1 { font-size: 14px; margin: 0; }
 .badge { font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 600; }
