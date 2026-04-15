@@ -79,10 +79,19 @@ const CSS = `
   .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
 `;
 
-export function mountOverlay(cb: OverlayCallbacks): OverlayHandle {
+export interface OverlayMountOptions {
+  /**
+   * Default `closed` in production so the host page can't inspect our UI.
+   * Tests pass `open` via the exported `mountOverlayForTest` seam so they
+   * can query and drive the shadow DOM.
+   */
+  shadowMode?: 'closed' | 'open';
+}
+
+export function mountOverlay(cb: OverlayCallbacks, opts: OverlayMountOptions = {}): OverlayHandle {
   const host = document.createElement('div');
   host.id = 'd365-repro-overlay-host';
-  const root = host.attachShadow({ mode: 'closed' });
+  const root = host.attachShadow({ mode: opts.shadowMode ?? 'closed' });
   root.innerHTML = `
     <style>${CSS}</style>
     <div class="wrap" role="region" aria-label="D365FO Repro Recorder controls">
@@ -196,6 +205,12 @@ export function mountOverlay(cb: OverlayCallbacks): OverlayHandle {
   });
   window.addEventListener('mouseup', () => { dragging = false; });
 
+  // Expose the shadow root via the host reference's __testShadow__ field
+  // when the caller asked for open mode. Never set in production.
+  if (opts.shadowMode === 'open') {
+    (host as unknown as { __testShadow__: ShadowRoot }).__testShadow__ = root;
+  }
+
   const handle: OverlayHandle = {
     setState(state, stepCount) {
       header.classList.remove('recording', 'paused');
@@ -227,4 +242,18 @@ export function mountOverlay(cb: OverlayCallbacks): OverlayHandle {
     },
   };
   return handle;
+}
+
+/**
+ * Tests-only entry point: mount the overlay with an open shadow root and
+ * return the handle alongside the host element (so tests can read the
+ * shadow DOM via host.shadowRoot). Production code must call mountOverlay.
+ */
+export function mountOverlayForTest(cb: OverlayCallbacks): {
+  handle: OverlayHandle;
+  host: HTMLElement;
+} {
+  const handle = mountOverlay(cb, { shadowMode: 'open' });
+  const host = document.getElementById('d365-repro-overlay-host') as HTMLElement;
+  return { handle, host };
 }
