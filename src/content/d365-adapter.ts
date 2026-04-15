@@ -50,7 +50,7 @@ export function getFormTitle(): string | undefined {
   ];
   for (const sel of candidates) {
     const el = document.querySelector<HTMLElement>(sel);
-    const text = el?.innerText?.trim();
+    const text = el?.textContent?.trim();
     if (text) return text;
   }
   const title = document.title?.trim();
@@ -72,14 +72,15 @@ export function resolveFieldLabel(el: HTMLElement): string | undefined {
   const labelledBy = el.getAttribute('aria-labelledby');
   if (labelledBy) {
     const ref = document.getElementById(labelledBy);
-    const t = ref?.innerText?.trim();
+    const t = ref?.textContent?.trim();
     if (t) return t;
   }
 
   const id = el.id;
   if (id) {
-    const lbl = document.querySelector<HTMLLabelElement>(`label[for="${CSS.escape(id)}"]`);
-    const t = lbl?.innerText?.trim();
+    const safeId = typeof CSS !== 'undefined' && typeof CSS.escape === 'function' ? CSS.escape(id) : id.replace(/["\\]/g, '\\$&');
+    const lbl = document.querySelector<HTMLLabelElement>(`label[for="${safeId}"]`);
+    const t = lbl?.textContent?.trim();
     if (t) return t;
   }
 
@@ -87,7 +88,7 @@ export function resolveFieldLabel(el: HTMLElement): string | undefined {
   let node: HTMLElement | null = el;
   for (let i = 0; i < 6 && node; i++) {
     const labelEl = node.querySelector<HTMLElement>(':scope > .label, :scope > [class*="FieldLabel"], :scope > .labelWrapper');
-    const t = labelEl?.innerText?.trim();
+    const t = labelEl?.textContent?.trim();
     if (t) return t;
     node = node.parentElement;
   }
@@ -112,7 +113,7 @@ export function resolveClickable(target: EventTarget | null): { label: string; r
     ) {
       const label =
         el.getAttribute('aria-label')?.trim() ||
-        (el as HTMLElement).innerText?.trim().replace(/\s+/g, ' ').slice(0, 120) ||
+        (el.textContent ?? '').trim().replace(/\s+/g, ' ').slice(0, 120) ||
         el.getAttribute('title')?.trim() ||
         el.getAttribute('name')?.trim() ||
         '';
@@ -142,7 +143,7 @@ export function getFieldValue(el: HTMLElement): string {
     return el.selectedOptions[0]?.text ?? el.value ?? '';
   }
   if (el instanceof HTMLTextAreaElement) return el.value ?? '';
-  if (el.isContentEditable) return el.innerText ?? '';
+  if (el.isContentEditable) return el.textContent ?? '';
   return '';
 }
 
@@ -164,16 +165,18 @@ export function observeErrors(onError: (message: string) => void): ErrorObserver
     '[role="alert"]',
   ].join(',');
 
+  function emit(n: HTMLElement): void {
+    const text = n.textContent?.trim();
+    if (!text) return;
+    if (seen.has(text)) return;
+    seen.add(text);
+    onError(text);
+  }
+
   function scan(root: ParentNode): void {
+    if (root instanceof HTMLElement && root.matches(ERR_SELECTORS)) emit(root);
     const nodes = root.querySelectorAll<HTMLElement>(ERR_SELECTORS);
-    nodes.forEach((n) => {
-      const text = n.innerText?.trim();
-      if (!text) return;
-      // dedupe by content so multiple re-renders don't spam
-      if (seen.has(text)) return;
-      seen.add(text);
-      onError(text);
-    });
+    nodes.forEach(emit);
   }
 
   scan(document);
@@ -196,5 +199,5 @@ export function getCurrentUser(): string | undefined {
   const el = document.querySelector<HTMLElement>(
     '[aria-label^="Account manager"], [aria-label^="Benutzer"], .userTile, [class*="UserTile"]',
   );
-  return el?.innerText?.trim() || undefined;
+  return el?.textContent?.trim() || undefined;
 }

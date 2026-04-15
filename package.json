@@ -30,11 +30,20 @@
     "build": "node scripts/build.mjs",
     "watch": "node scripts/build.mjs --watch",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "coverage": "vitest run --coverage",
     "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\""
   },
   "devDependencies": {
+    "@types/adm-zip": "^0.5.8",
     "@types/chrome": "^0.0.268",
+    "@vitest/coverage-v8": "^2.1.9",
+    "adm-zip": "^0.5.17",
     "esbuild": "^0.21.5",
-    "typescript": "^5.4.5"
+    "fake-indexeddb": "^6.2.5",
+    "jsdom": "^25.0.1",
+    "typescript": "^5.4.5",
+    "vitest": "^2.1.9"
   }
 }
