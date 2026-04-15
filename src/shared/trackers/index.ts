@@ -2,6 +2,7 @@ import type { TrackerProvider } from './provider';
 import { OtrsProvider } from './otrs';
 import { JiraProvider } from './jira';
 import { AzureDevOpsProvider } from './azuredevops';
+import { GithubProvider } from './github';
 
 export * from './provider';
 export * from './common';
@@ -15,6 +16,7 @@ export const TRACKER_PROVIDERS: readonly TrackerProvider[] = [
   new OtrsProvider(),
   new JiraProvider(),
   new AzureDevOpsProvider(),
+  new GithubProvider(),
 ] as const;
 
 export function getProvider(id: string): TrackerProvider | undefined {
