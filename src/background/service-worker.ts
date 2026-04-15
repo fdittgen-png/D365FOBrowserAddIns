@@ -423,10 +423,11 @@ export async function handleMessage(msg: Message, sender: chrome.runtime.Message
         if (!provider) throw new Error(`Unknown tracker provider: ${settings.activeProviderId}`);
         const config = settings.providerConfigs[provider.id] ?? {};
         const validation = provider.validateConfig(config as Record<string, unknown>);
-        if (!validation.ok)
+        if (!validation.ok) {
           throw new Error(
             `Invalid ${provider.displayName} config: ${Object.values(validation.errors ?? {}).join('; ')}`,
           );
+        }
         const { attachments } = await collectAttachments(session);
         const result = await provider.submit(session, config as Record<string, unknown>, attachments);
         return { ok: true, data: { providerId: provider.id, providerName: provider.displayName, ...result } };
