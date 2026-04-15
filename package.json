@@ -40,7 +40,7 @@
     "@types/chrome": "^0.0.268",
     "@vitest/coverage-v8": "^2.1.9",
     "adm-zip": "^0.5.17",
-    "esbuild": "^0.21.5",
+    "esbuild": "^0.28.0",
     "fake-indexeddb": "^6.2.5",
     "jsdom": "^25.0.1",
     "typescript": "^5.4.5",
