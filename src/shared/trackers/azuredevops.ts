@@ -12,6 +12,8 @@ import {
   buildTicketSubject,
   buildPlainDescription,
   ensureHostPermission,
+  fetchWithTimeout,
+  resolveTimeout,
 } from './common';
 
 export interface AzureDevOpsConfig extends Record<string, unknown> {
@@ -22,6 +24,7 @@ export interface AzureDevOpsConfig extends Record<string, unknown> {
   iterationPath: string;
   pat: string;
   apiVersion: string;
+  timeoutMs?: number;
 }
 
 const SCHEMA: ConfigSchema = {
@@ -36,6 +39,7 @@ const SCHEMA: ConfigSchema = {
     { key: 'iterationPath', label: 'Iteration path', type: 'text', hint: 'optional' },
     { key: 'pat', label: 'Personal Access Token', type: 'password', required: true, secret: true },
     { key: 'apiVersion', label: 'API version', type: 'text', default: '7.1' },
+    { key: 'timeoutMs', label: 'Request timeout (ms)', type: 'number', default: 30000, hint: 'Default 30s. Capped at 120s.' },
   ],
 };
 
@@ -61,7 +65,7 @@ export class AzureDevOpsProvider implements TrackerProvider<AzureDevOpsConfig> {
     await ensureHostPermission(config.organizationUrl);
     try {
       const url = `${trim(config.organizationUrl)}/${encodeURIComponent(config.project)}/_apis/wit/workitemtypes?api-version=${config.apiVersion}`;
-      const resp = await fetch(url, { headers: this.authHeaders(config) });
+      const resp = await fetchWithTimeout(url, { headers: this.authHeaders(config) }, resolveTimeout(config));
       const text = await resp.text();
       if (resp.ok) {
         try {
@@ -81,16 +85,21 @@ export class AzureDevOpsProvider implements TrackerProvider<AzureDevOpsConfig> {
     await ensureHostPermission(config.organizationUrl);
     const apiVersion = config.apiVersion || '7.1';
     const headers = this.authHeaders(config);
+    const timeout = resolveTimeout(config);
 
     // 1. Upload attachments first so the work-item create can reference them.
     const uploaded: { url: string; name: string }[] = [];
     for (const att of attachments) {
       const uploadUrl = `${trim(config.organizationUrl)}/${encodeURIComponent(config.project)}/_apis/wit/attachments?fileName=${encodeURIComponent(att.filename)}&api-version=${apiVersion}`;
-      const resp = await fetch(uploadUrl, {
-        method: 'POST',
-        headers: { ...headers, 'Content-Type': att.mime || 'application/octet-stream' },
-        body: att.bytes as BodyInit,
-      });
+      const resp = await fetchWithTimeout(
+        uploadUrl,
+        {
+          method: 'POST',
+          headers: { ...headers, 'Content-Type': att.mime || 'application/octet-stream' },
+          body: att.bytes as BodyInit,
+        },
+        timeout,
+      );
       const text = await resp.text();
       if (!resp.ok) throw new Error(`Attachment upload failed for ${att.filename}: HTTP ${resp.status} — ${truncate(text, 200)}`);
       const parsed = JSON.parse(text) as { url?: string };
@@ -130,11 +139,15 @@ export class AzureDevOpsProvider implements TrackerProvider<AzureDevOpsConfig> {
     }
 
     const createUrl = `${trim(config.organizationUrl)}/${encodeURIComponent(config.project)}/_apis/wit/workitems/$${encodeURIComponent(config.workItemType || 'Bug')}?api-version=${apiVersion}`;
-    const resp = await fetch(createUrl, {
-      method: 'POST',
-      headers: { ...headers, 'Content-Type': 'application/json-patch+json' },
-      body: JSON.stringify(ops),
-    });
+    const resp = await fetchWithTimeout(
+      createUrl,
+      {
+        method: 'POST',
+        headers: { ...headers, 'Content-Type': 'application/json-patch+json' },
+        body: JSON.stringify(ops),
+      },
+      timeout,
+    );
     const text = await resp.text();
     if (!resp.ok) throw new Error(`Azure DevOps create failed: HTTP ${resp.status} — ${truncate(text, 300)}`);
     const parsed = JSON.parse(text) as { id?: number; _links?: { html?: { href?: string } } };

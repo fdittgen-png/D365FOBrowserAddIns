@@ -13,6 +13,8 @@ import {
   buildPlainDescription,
   bytesToBase64,
   ensureHostPermission,
+  fetchWithTimeout,
+  resolveTimeout,
 } from './common';
 
 export interface OtrsConfig extends Record<string, unknown> {
@@ -24,6 +26,7 @@ export interface OtrsConfig extends Record<string, unknown> {
   type: string;
   priority: string;
   state: string;
+  timeoutMs?: number;
 }
 
 const SCHEMA: ConfigSchema = {
@@ -51,6 +54,13 @@ const SCHEMA: ConfigSchema = {
       ],
     },
     { key: 'state', label: 'State', type: 'text', default: 'new' },
+    {
+      key: 'timeoutMs',
+      label: 'Request timeout (ms)',
+      type: 'number',
+      default: 30000,
+      hint: 'Default 30s. Capped at 120s.',
+    },
   ],
 };
 
@@ -70,11 +80,15 @@ export class OtrsProvider implements TrackerProvider<OtrsConfig> {
     await ensureHostPermission(config.baseUrl);
     const url = this.endpoint(config, 'SessionCreate');
     try {
-      const resp = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ UserLogin: config.user, Password: config.password }),
-      });
+      const resp = await fetchWithTimeout(
+        url,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ UserLogin: config.user, Password: config.password }),
+        },
+        resolveTimeout(config),
+      );
       const text = await resp.text();
       if (resp.ok) return { ok: true, message: `HTTP ${resp.status} — ${truncate(text, 120)}` };
       return { ok: false, message: `HTTP ${resp.status} — ${truncate(text, 200)}` };
@@ -110,11 +124,15 @@ export class OtrsProvider implements TrackerProvider<OtrsConfig> {
       },
       Attachment: otrsAttachments,
     };
-    const resp = await fetch(this.endpoint(config, 'Ticket'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
+    const resp = await fetchWithTimeout(
+      this.endpoint(config, 'Ticket'),
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      },
+      resolveTimeout(config),
+    );
     const text = await resp.text();
     let parsed: unknown;
     try {

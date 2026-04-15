@@ -12,6 +12,8 @@ import {
   buildTicketSubject,
   buildPlainDescription,
   ensureHostPermission,
+  fetchWithTimeout,
+  resolveTimeout,
 } from './common';
 
 export interface JiraConfig extends Record<string, unknown> {
@@ -22,6 +24,7 @@ export interface JiraConfig extends Record<string, unknown> {
   email: string;
   apiToken: string;
   labels: string;
+  timeoutMs?: number;
 }
 
 const SCHEMA: ConfigSchema = {
@@ -45,6 +48,7 @@ const SCHEMA: ConfigSchema = {
     { key: 'email', label: 'Email (Cloud only)', type: 'text', placeholder: 'you@example.com' },
     { key: 'apiToken', label: 'API token / PAT', type: 'password', required: true, secret: true },
     { key: 'labels', label: 'Default labels', type: 'text', placeholder: 'd365fo,repro-recorder', hint: 'comma-separated' },
+    { key: 'timeoutMs', label: 'Request timeout (ms)', type: 'number', default: 30000, hint: 'Default 30s. Capped at 120s.' },
   ],
 };
 
@@ -66,9 +70,11 @@ export class JiraProvider implements TrackerProvider<JiraConfig> {
   async testConnection(config: JiraConfig): Promise<TestResult> {
     await ensureHostPermission(config.siteUrl);
     try {
-      const resp = await fetch(`${trim(config.siteUrl)}/rest/api/3/myself`, {
-        headers: this.authHeaders(config),
-      });
+      const resp = await fetchWithTimeout(
+        `${trim(config.siteUrl)}/rest/api/3/myself`,
+        { headers: this.authHeaders(config) },
+        resolveTimeout(config),
+      );
       const text = await resp.text();
       if (resp.ok) {
         try {
@@ -101,11 +107,16 @@ export class JiraProvider implements TrackerProvider<JiraConfig> {
       },
     };
 
-    const createResp = await fetch(`${trim(config.siteUrl)}/rest/api/3/issue`, {
-      method: 'POST',
-      headers: { ...this.authHeaders(config), 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
+    const timeout = resolveTimeout(config);
+    const createResp = await fetchWithTimeout(
+      `${trim(config.siteUrl)}/rest/api/3/issue`,
+      {
+        method: 'POST',
+        headers: { ...this.authHeaders(config), 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      },
+      timeout,
+    );
     const createText = await createResp.text();
     if (!createResp.ok) throw new Error(`Jira create failed: HTTP ${createResp.status} — ${truncate(createText, 300)}`);
     const created = JSON.parse(createText) as { id?: string; key?: string };
@@ -118,21 +129,26 @@ export class JiraProvider implements TrackerProvider<JiraConfig> {
         const form = new FormData();
         const blob = new Blob([att.bytes as BlobPart], { type: att.mime });
         form.append('file', blob, att.filename);
-        const r = await fetch(`${trim(config.siteUrl)}/rest/api/3/issue/${created.key}/attachments`, {
-          method: 'POST',
-          headers: { ...this.authHeaders(config), 'X-Atlassian-Token': 'no-check' },
-          body: form,
-        });
+        const r = await fetchWithTimeout(
+          `${trim(config.siteUrl)}/rest/api/3/issue/${created.key}/attachments`,
+          {
+            method: 'POST',
+            headers: { ...this.authHeaders(config), 'X-Atlassian-Token': 'no-check' },
+            body: form,
+          },
+          timeout,
+        );
         if (!r.ok) {
           const t = await r.text();
           throw new Error(`attachment ${att.filename} failed: HTTP ${r.status} — ${truncate(t, 200)}`);
         }
       }
     } catch (e) {
-      await fetch(`${trim(config.siteUrl)}/rest/api/3/issue/${created.key}`, {
-        method: 'DELETE',
-        headers: this.authHeaders(config),
-      }).catch(() => undefined);
+      await fetchWithTimeout(
+        `${trim(config.siteUrl)}/rest/api/3/issue/${created.key}`,
+        { method: 'DELETE', headers: this.authHeaders(config) },
+        timeout,
+      ).catch(() => undefined);
       throw e;
     }
 
