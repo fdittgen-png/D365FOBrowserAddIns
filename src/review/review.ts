@@ -1,6 +1,7 @@
 import { send } from '@shared/messaging';
 import type { Message, Session, Step } from '@shared/types';
 import { applyI18n } from '@shared/i18n';
+import { openRedactor } from './redactor';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const snapCache = new Map<string, string>();
@@ -124,15 +125,56 @@ async function renderSteps(): Promise<void> {
     li.append(idx, kind, body, controls);
 
     if ('screenshotId' in step && step.screenshotId) {
+      const thumbWrap = document.createElement('div');
+      thumbWrap.className = 'thumb-wrap';
       const img = document.createElement('img');
       img.className = 'thumb';
       img.alt = 'screenshot';
-      li.appendChild(img);
-      void getSnapshotDataUrl(step.screenshotId).then((url) => {
+      const redactBtn = document.createElement('button');
+      redactBtn.className = 'thumb-redact';
+      redactBtn.type = 'button';
+      redactBtn.textContent = 'Redact';
+      redactBtn.title = 'Open redaction editor to hide PII';
+      thumbWrap.append(img, redactBtn);
+      li.appendChild(thumbWrap);
+
+      const snapId = step.screenshotId;
+      void getSnapshotDataUrl(snapId).then((url) => {
         if (url) img.src = url;
       });
       img.addEventListener('click', () => {
         if (img.src) window.open(img.src, '_blank');
+      });
+      redactBtn.addEventListener('click', async (ev) => {
+        ev.stopPropagation();
+        const current = session;
+        if (!current) return;
+        const url = await getSnapshotDataUrl(snapId);
+        if (!url) { toast('Snapshot not available'); return; }
+        openRedactor({
+          sourceDataUrl: url,
+          onSave: async (editedDataUrl) => {
+            const resp = await send({
+              type: 'REVIEW_REPLACE_SNAPSHOT',
+              sessionId: current.id,
+              snapshotId: snapId,
+              pngDataUrl: editedDataUrl,
+            });
+            if (resp.ok) {
+              snapCache.set(snapId, editedDataUrl);
+              img.src = editedDataUrl;
+              toast('Screenshot redacted');
+              // Reload session so the [redacted] marker shows up
+              const sresp = await send<Session>({ type: 'REVIEW_GET_SESSION', sessionId: current.id });
+              if (sresp.ok && sresp.data) {
+                session = sresp.data;
+                await renderSteps();
+              }
+            } else {
+              toast(`Redact failed: ${resp.error}`);
+            }
+          },
+        });
       });
     }
 

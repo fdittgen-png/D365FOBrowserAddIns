@@ -34,7 +34,10 @@ kbd { font-family: ui-monospace, monospace; font-size: 11px; background:#f3f4f6;
 .step .body .label { font-weight:600; }
 .step .body .sub   { color:#6b7280; font-size: 12px; }
 .step .body textarea { margin-top:6px; min-height: 40px; font-size:12px; }
-.step .thumb { grid-column: 3 / 5; margin-top:8px; max-width: 100%; border:1px solid #e5e7eb; border-radius:4px; cursor: zoom-in; }
+.step .thumb-wrap { grid-column: 3 / 5; margin-top:8px; position:relative; display:inline-block; max-width: 100%; }
+.step .thumb { max-width: 100%; border:1px solid #e5e7eb; border-radius:4px; cursor: zoom-in; display:block; }
+.step .thumb-redact { position:absolute; top:6px; right:6px; padding: 4px 10px; font-size:11px; background:rgba(17,24,39,0.85); color:white; border:none; border-radius:4px; cursor:pointer; }
+.step .thumb-redact:hover { background:#111827; }
 .step .controls { display:flex; flex-direction:column; gap: 4px; }
 .step .controls button { padding: 3px 8px; font-size: 11px; }
 

@@ -349,6 +349,29 @@ onMessage(async (msg: Message, sender): Promise<MessageResponse> => {
       return { ok: true, data: { snapshotId: snap.id, stepId: step.id } };
     }
 
+    case 'REVIEW_REPLACE_SNAPSHOT': {
+      // Used by the PII redactor: overwrite the existing blob under the same
+      // snapshot id so every downstream reference (XML export, tracker
+      // submission, IndexedDB) automatically picks up the redacted version.
+      const existing = await getSnapshot(msg.snapshotId);
+      if (!existing) return { ok: false, error: 'snapshot-not-found' };
+      const blob = await (await fetch(msg.pngDataUrl)).blob();
+      await putSnapshot({ ...existing, data: blob, ts: Date.now() });
+      // Flag the step as redacted so the review page can render a marker
+      const active = await getActiveSession();
+      const target = active && active.id === msg.sessionId ? active : await getArchivedSession(msg.sessionId);
+      if (target) {
+        for (const step of target.steps) {
+          if ('screenshotId' in step && step.screenshotId === msg.snapshotId) {
+            (step as { note?: string }).note = `${step.note ? step.note + ' ' : ''}[redacted]`;
+          }
+        }
+        if (active && active.id === target.id) await setActiveSession(target);
+        else await archiveSession(target);
+      }
+      return { ok: true };
+    }
+
     case 'REVIEW_EXPORT_XML': {
       const session = await getArchivedSession(msg.sessionId);
       if (!session) return { ok: false, error: 'not-found' };

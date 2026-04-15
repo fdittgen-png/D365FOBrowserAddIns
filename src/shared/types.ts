@@ -156,6 +156,7 @@ export type Message =
   | { type: 'REVIEW_UPDATE_SESSION'; session: Session }
   | { type: 'REVIEW_GET_SNAPSHOT'; snapshotId: string }
   | { type: 'REVIEW_ADD_PASTED_IMAGE'; sessionId: string; pngDataUrl: string; note?: string }
+  | { type: 'REVIEW_REPLACE_SNAPSHOT'; sessionId: string; snapshotId: string; pngDataUrl: string }
   | { type: 'REVIEW_EXPORT_XML'; sessionId: string }
   | { type: 'REVIEW_SUBMIT_TRACKER'; sessionId: string }
   | { type: 'REVIEW_GET_TRACKER_INFO' }
