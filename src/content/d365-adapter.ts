@@ -1,11 +1,12 @@
 /**
- * D365FO-specific DOM and URL knowledge lives here. Keep everything else generic
- * so the recorder can be adapted to other apps with a sibling adapter.
+ * D365FO-specific DOM and URL knowledge lives here. Keep everything else
+ * generic so the recorder can be adapted to other apps with a sibling adapter.
  *
- * Selectors and patterns are based on the public D365FO Unified Operations UI
- * as of 2024-2026 (wcf forms, dyn controls, message bars). They are intentionally
- * permissive: when a selector misses, we fall back to a generic strategy so a
- * recording never silently loses an event.
+ * Every selector the adapter uses is declared in the D365_SELECTORS constant
+ * below. Breaking one of those only produces a warning via the telemetry
+ * callback; it never throws or silently drops an event. See
+ * docs/d365-adapter.md for the process for updating selectors when
+ * Microsoft ships a D365FO UI change.
  */
 
 export interface UrlInfo {
@@ -17,12 +18,70 @@ export interface UrlInfo {
   url: string;
 }
 
+/**
+ * Central selector table. Ordered by preference — the resolver walks down
+ * the list and stops at the first match. Add new selectors at the TOP so
+ * newer D365FO releases take priority over legacy fallbacks.
+ */
+export const D365_SELECTORS = {
+  formTitle: [
+    '.Form-title',
+    '.form-title',
+    '[role="banner"] h1',
+    '.AppBarTitle-content',
+    '.AppBarHeaderTitle',
+  ],
+  fieldLabelContainer: [
+    ':scope > .label',
+    ':scope > [class*="FieldLabel"]',
+    ':scope > .labelWrapper',
+  ],
+  clickable:
+    'button, a[href], [role="button"], [role="menuitem"], [role="tab"], [role="link"], .button, .menuItem, .dyn-button, .dynamicsTile',
+  errorBanner: [
+    '.messageBarError',
+    '.notificationMessages .error',
+    '[class*="MessageBar"][class*="Error"]',
+    '[class*="notification"][class*="error"]',
+    '[role="alert"]',
+  ],
+  userChip: [
+    '[aria-label^="Account manager"]',
+    '[aria-label^="Benutzer"]',
+    '.userTile',
+    '[class*="UserTile"]',
+  ],
+} as const;
+
+// ----------------- telemetry -----------------
+
+export type AdapterWarning = {
+  kind: 'field-label' | 'form-title' | 'clickable';
+  reason: string;
+  sample?: string;
+};
+
+let warningSink: ((w: AdapterWarning) => void) | null = null;
+
+/**
+ * Wire a callback that fires whenever the adapter falls through every
+ * selector strategy it knows about and has to give up. The recorder
+ * forwards these into the session as warning steps so users can report
+ * them without manual bug-filing.
+ */
+export function setAdapterWarningSink(sink: ((w: AdapterWarning) => void) | null): void {
+  warningSink = sink;
+}
+
+function warn(w: AdapterWarning): void {
+  if (warningSink) warningSink(w);
+}
+
+// ----------------- url parsing -----------------
+
 export function parseUrl(url: string): UrlInfo {
   const u = new URL(url);
   const q = u.searchParams;
-  // D365FO examples:
-  //   ?cmp=USMF&mi=LedgerJournalTable&lng=en-us
-  //   ?cmp=USMF&mi=action:CustTableListPage
   const mi = q.get('mi') ?? undefined;
   const cmp = q.get('cmp') ?? undefined;
   const lng = q.get('lng') ?? undefined;
@@ -36,34 +95,29 @@ export function parseUrl(url: string): UrlInfo {
   };
 }
 
-/**
- * D365FO renders the active form title inside a specific header element. We
- * try a few known selectors and fall back to document.title.
- */
+// ----------------- form title -----------------
+
 export function getFormTitle(): string | undefined {
-  const candidates = [
-    '.Form-title',
-    '.form-title',
-    '[role="banner"] h1',
-    '.AppBarTitle-content',
-    '.AppBarHeaderTitle',
-  ];
-  for (const sel of candidates) {
+  for (const sel of D365_SELECTORS.formTitle) {
     const el = document.querySelector<HTMLElement>(sel);
     const text = el?.textContent?.trim();
     if (text) return text;
   }
   const title = document.title?.trim();
-  return title || undefined;
+  if (title) return title;
+  warn({ kind: 'form-title', reason: 'no selector matched and document.title is empty' });
+  return undefined;
 }
+
+// ----------------- field labels -----------------
 
 /**
  * Resolve the human-visible label for an input-like element. Strategy:
  *   1. aria-label
  *   2. aria-labelledby -> id lookup
  *   3. associated <label for="id">
- *   4. nearest ancestor with .label or [class*="FieldLabel"]
- *   5. preceding sibling span in D365FO field container
+ *   4. nearest ancestor with a D365FO field-label container child
+ *   5. placeholder (wrapped in parens)
  */
 export function resolveFieldLabel(el: HTMLElement): string | undefined {
   const aria = el.getAttribute('aria-label')?.trim();
@@ -78,46 +132,56 @@ export function resolveFieldLabel(el: HTMLElement): string | undefined {
 
   const id = el.id;
   if (id) {
-    const safeId = typeof CSS !== 'undefined' && typeof CSS.escape === 'function' ? CSS.escape(id) : id.replace(/["\\]/g, '\\$&');
+    const safeId =
+      typeof CSS !== 'undefined' && typeof CSS.escape === 'function'
+        ? CSS.escape(id)
+        : id.replace(/["\\]/g, '\\$&');
     const lbl = document.querySelector<HTMLLabelElement>(`label[for="${safeId}"]`);
     const t = lbl?.textContent?.trim();
     if (t) return t;
   }
 
-  // Walk up looking for a D365FO field-container with a label child
+  const containerSelector = D365_SELECTORS.fieldLabelContainer.join(',');
   let node: HTMLElement | null = el;
   for (let i = 0; i < 6 && node; i++) {
-    const labelEl = node.querySelector<HTMLElement>(':scope > .label, :scope > [class*="FieldLabel"], :scope > .labelWrapper');
+    const labelEl = node.querySelector<HTMLElement>(containerSelector);
     const t = labelEl?.textContent?.trim();
     if (t) return t;
     node = node.parentElement;
   }
 
-  // Last resort: placeholder
   const ph = (el as HTMLInputElement).placeholder?.trim();
   if (ph) return `(${ph})`;
 
+  warn({
+    kind: 'field-label',
+    reason: 'no aria-label, no label-for, no D365 label container, no placeholder',
+    sample: elementSignature(el),
+  });
   return undefined;
 }
 
-/**
- * Resolve the accessible name of a clicked element. Walks up to 5 ancestors
- * looking for a meaningful "clickable" — button, link, menu item, tile.
- */
+// ----------------- clickables -----------------
+
 export function resolveClickable(target: EventTarget | null): { label: string; role?: string } | null {
   if (!(target instanceof Element)) return null;
   let el: Element | null = target;
   for (let i = 0; i < 6 && el; i++, el = el.parentElement) {
-    if (
-      el.matches('button, a[href], [role="button"], [role="menuitem"], [role="tab"], [role="link"], .button, .menuItem, .dyn-button, .dynamicsTile')
-    ) {
+    if (el.matches(D365_SELECTORS.clickable)) {
       const label =
         el.getAttribute('aria-label')?.trim() ||
         (el.textContent ?? '').trim().replace(/\s+/g, ' ').slice(0, 120) ||
         el.getAttribute('title')?.trim() ||
         el.getAttribute('name')?.trim() ||
         '';
-      if (!label) continue;
+      if (!label) {
+        warn({
+          kind: 'clickable',
+          reason: 'matched clickable selector but no text/aria-label/title',
+          sample: elementSignature(el),
+        });
+        continue;
+      }
       const role = el.getAttribute('role') ?? el.tagName.toLowerCase();
       return { label, role };
     }
@@ -125,7 +189,11 @@ export function resolveClickable(target: EventTarget | null): { label: string; r
   return null;
 }
 
-export function isEditableField(el: EventTarget | null): el is HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement {
+// ----------------- editable detection -----------------
+
+export function isEditableField(
+  el: EventTarget | null,
+): el is HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement {
   if (!(el instanceof HTMLElement)) return false;
   if (el instanceof HTMLInputElement) {
     const t = el.type.toLowerCase();
@@ -147,23 +215,15 @@ export function getFieldValue(el: HTMLElement): string {
   return '';
 }
 
-/**
- * Message bar detection. D365FO shows errors in .messageBarError / .notification-error.
- * We watch mutations on body and emit the first meaningful text.
- */
+// ----------------- error banner observation -----------------
+
 export interface ErrorObserver {
   stop(): void;
 }
 
 export function observeErrors(onError: (message: string) => void): ErrorObserver {
   const seen = new Set<string>();
-  const ERR_SELECTORS = [
-    '.messageBarError',
-    '.notificationMessages .error',
-    '[class*="MessageBar"][class*="Error"]',
-    '[class*="notification"][class*="error"]',
-    '[role="alert"]',
-  ].join(',');
+  const selector = D365_SELECTORS.errorBanner.join(',');
 
   function emit(n: HTMLElement): void {
     const text = n.textContent?.trim();
@@ -174,8 +234,8 @@ export function observeErrors(onError: (message: string) => void): ErrorObserver
   }
 
   function scan(root: ParentNode): void {
-    if (root instanceof HTMLElement && root.matches(ERR_SELECTORS)) emit(root);
-    const nodes = root.querySelectorAll<HTMLElement>(ERR_SELECTORS);
+    if (root instanceof HTMLElement && root.matches(selector)) emit(root);
+    const nodes = root.querySelectorAll<HTMLElement>(selector);
     nodes.forEach(emit);
   }
 
@@ -188,16 +248,27 @@ export function observeErrors(onError: (message: string) => void): ErrorObserver
       if (m.target instanceof Element && m.type === 'attributes') scan(m.target);
     }
   });
-  obs.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] });
+  obs.observe(document.body, {
+    subtree: true,
+    childList: true,
+    attributes: true,
+    attributeFilter: ['class'],
+  });
   return { stop: () => obs.disconnect() };
 }
 
-/**
- * Best-effort: read the current user name from the top-right user chip.
- */
+// ----------------- user chip -----------------
+
 export function getCurrentUser(): string | undefined {
-  const el = document.querySelector<HTMLElement>(
-    '[aria-label^="Account manager"], [aria-label^="Benutzer"], .userTile, [class*="UserTile"]',
-  );
+  const el = document.querySelector<HTMLElement>(D365_SELECTORS.userChip.join(','));
   return el?.textContent?.trim() || undefined;
+}
+
+// ----------------- helpers -----------------
+
+function elementSignature(el: Element): string {
+  const tag = el.tagName.toLowerCase();
+  const id = el.id ? `#${el.id}` : '';
+  const cls = typeof el.className === 'string' && el.className ? `.${el.className.split(/\s+/).slice(0, 3).join('.')}` : '';
+  return `${tag}${id}${cls}`.slice(0, 80);
 }

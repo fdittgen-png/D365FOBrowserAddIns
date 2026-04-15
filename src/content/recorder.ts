@@ -10,6 +10,7 @@ import {
   getFieldValue,
   observeErrors,
   getCurrentUser,
+  setAdapterWarningSink,
 } from './d365-adapter';
 import { mountOverlay, OverlayHandle } from './overlay';
 
@@ -158,6 +159,10 @@ function handleNavigate(): void {
 
 // --------------- lifecycle ---------------
 
+// Warning throttle: when a selector drifts, we'd otherwise generate a note
+// per event. Keep the most recent N distinct reasons and drop duplicates.
+const seenWarnings = new Set<string>();
+
 function attachListeners(): void {
   if (listenersAttached) return;
   listenersAttached = true;
@@ -170,6 +175,20 @@ function attachListeners(): void {
     if (!recording || paused) return;
     void send({ type: 'ERROR_DETECTED', message, formTitle: getFormTitle() });
   }).stop as unknown as () => void;
+  setAdapterWarningSink((w) => {
+    if (!recording || paused) return;
+    const key = `${w.kind}:${w.reason}`;
+    if (seenWarnings.has(key)) return;
+    seenWarnings.add(key);
+    console.warn('[repro] adapter selector miss', w);
+    void send({
+      type: 'STEP_EVENT',
+      step: {
+        kind: 'note',
+        text: `[adapter-warning] ${w.kind}: ${w.reason}${w.sample ? ` (${w.sample})` : ''}`,
+      } as unknown as never,
+    });
+  });
 }
 
 function detachListeners(): void {
@@ -181,6 +200,8 @@ function detachListeners(): void {
   document.removeEventListener('change', handleChange, true);
   window.removeEventListener('d365-repro:navigate', handleNavigate as EventListener);
   if (errorObserverStop) { errorObserverStop(); errorObserverStop = null; }
+  setAdapterWarningSink(null);
+  seenWarnings.clear();
 }
 
 function ensureOverlay(): OverlayHandle {

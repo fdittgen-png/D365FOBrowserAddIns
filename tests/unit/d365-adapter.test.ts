@@ -7,6 +7,9 @@ import {
   isEditableField,
   getFieldValue,
   observeErrors,
+  setAdapterWarningSink,
+  D365_SELECTORS,
+  type AdapterWarning,
 } from '../../src/content/d365-adapter';
 
 describe('parseUrl', () => {
@@ -166,6 +169,50 @@ describe('getFieldValue', () => {
     s.append(o1);
     s.value = 'USD';
     expect(getFieldValue(s)).toBe('US Dollar');
+  });
+});
+
+describe('D365_SELECTORS', () => {
+  it('exposes a stable table the adapter reads from', () => {
+    expect(D365_SELECTORS.formTitle).toEqual(expect.arrayContaining(['.Form-title']));
+    expect(D365_SELECTORS.errorBanner.length).toBeGreaterThan(0);
+    expect(typeof D365_SELECTORS.clickable).toBe('string');
+  });
+});
+
+describe('selector telemetry (setAdapterWarningSink)', () => {
+  beforeEach(() => {
+    document.body.innerHTML = '';
+    setAdapterWarningSink(null);
+  });
+
+  it('reports field-label misses via the sink with a sample signature', () => {
+    const warnings: AdapterWarning[] = [];
+    setAdapterWarningSink((w) => warnings.push(w));
+    const input = document.createElement('input');
+    input.className = 'mystery-field';
+    document.body.append(input);
+    expect(resolveFieldLabel(input)).toBeUndefined();
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]!.kind).toBe('field-label');
+    expect(warnings[0]!.sample).toContain('input');
+    expect(warnings[0]!.sample).toContain('mystery-field');
+  });
+
+  it('reports form-title miss when no selector matches and document.title is empty', () => {
+    document.title = '';
+    const warnings: AdapterWarning[] = [];
+    setAdapterWarningSink((w) => warnings.push(w));
+    expect(getFormTitle()).toBeUndefined();
+    expect(warnings.some((w) => w.kind === 'form-title')).toBe(true);
+  });
+
+  it('a null sink means warnings are silently dropped', () => {
+    setAdapterWarningSink(null);
+    const input = document.createElement('input');
+    document.body.append(input);
+    // Should not throw even though the sink is null
+    expect(() => resolveFieldLabel(input)).not.toThrow();
   });
 });
 
