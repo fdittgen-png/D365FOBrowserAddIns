@@ -54,6 +54,9 @@ Load the built extension:
 3. Click **Load unpacked** and pick the `dist/` directory.
 4. Pin the extension to the toolbar.
 
+For a step-by-step walk-through with annotated notes on every feature,
+see the [user guide](docs/user-guide.md).
+
 ## Usage
 
 1. Open a tab on a D365FO tenant.
