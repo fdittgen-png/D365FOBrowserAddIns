@@ -18,8 +18,10 @@
     "https://*.cloudax.dynamics.com/*"
   ],
   "optional_host_permissions": [
-    "http://*/*",
-    "https://*/*"
+    "https://*.atlassian.net/*",
+    "https://*.atlassian.com/*",
+    "https://dev.azure.com/*",
+    "https://*.visualstudio.com/*"
   ],
   "optional_permissions": [
     "debugger"
