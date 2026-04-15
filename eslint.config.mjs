@@ -2,7 +2,6 @@
 import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 import unicorn from 'eslint-plugin-unicorn';
-import promise from 'eslint-plugin-promise';
 
 export default tseslint.config(
   {
@@ -21,7 +20,7 @@ export default tseslint.config(
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
-    plugins: { unicorn, promise },
+    plugins: { unicorn },
     rules: {
       // TypeScript
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
@@ -37,9 +36,6 @@ export default tseslint.config(
       // Unicorn — enable a small, practical subset
       'unicorn/no-useless-undefined': 'off',
       'unicorn/prefer-node-protocol': 'error',
-
-      // Promise hygiene
-      'promise/no-callback-in-promise': 'warn',
     },
   },
   {
