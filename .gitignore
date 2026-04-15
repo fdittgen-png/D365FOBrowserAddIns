@@ -24,6 +24,7 @@ coverage/
 .vitest/
 playwright-report/
 test-results/
+tests/e2e/.auth/
 
 # TypeScript
 *.tsbuildinfo
