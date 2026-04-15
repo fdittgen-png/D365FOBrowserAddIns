@@ -17,3 +17,9 @@ button.primary:hover { background:#1d4ed8; }
 .hint { font-size:12px; color:#6b7280; }
 kbd { font-family: ui-monospace, monospace; font-size: 11px; background:#f3f4f6; border:1px solid #d1d5db; border-bottom-width:2px; border-radius: 3px; padding: 1px 4px; }
 ul { padding-left: 18px; }
+.shortcut-row { list-style:none; display:flex; align-items:center; gap:8px; margin:4px 0; padding:0; }
+.shortcut-row kbd { min-width: 120px; text-align:center; }
+.shortcut-row kbd.missing { background:#fef3c7; color:#92400e; border-color:#fcd34d; }
+.shortcut-row .shortcut-desc { font-size: 12px; color:#374151; flex:1; }
+.shortcut-row .shortcut-warn { font-size: 11px; color:#92400e; }
+#shortcuts-list { padding-left: 0; }

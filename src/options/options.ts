@@ -222,11 +222,30 @@ async function loadShortcuts(): Promise<void> {
   list.innerHTML = '';
   try {
     const cmds = await chrome.commands.getAll();
+    if (cmds.length === 0) {
+      const li = document.createElement('li');
+      li.textContent = 'No commands registered.';
+      list.append(li);
+      return;
+    }
     for (const c of cmds) {
       const li = document.createElement('li');
-      const shortcut = c.shortcut || '(not set)';
-      const warn = c.shortcut ? '' : ' ⚠';
-      li.innerHTML = `<kbd>${escapeHtml(shortcut)}</kbd>${warn} — ${escapeHtml(c.description ?? c.name ?? '')}`;
+      li.className = 'shortcut-row';
+      const hasBinding = Boolean(c.shortcut);
+      const kbd = document.createElement('kbd');
+      kbd.textContent = hasBinding ? c.shortcut! : '— not set —';
+      if (!hasBinding) kbd.classList.add('missing');
+      const desc = document.createElement('span');
+      desc.className = 'shortcut-desc';
+      desc.textContent = c.description ?? c.name ?? '';
+      li.append(kbd, desc);
+      if (!hasBinding) {
+        const warn = document.createElement('span');
+        warn.className = 'shortcut-warn';
+        warn.textContent = '⚠ conflict or unset';
+        warn.title = 'Another extension may have claimed this binding';
+        li.append(warn);
+      }
       list.append(li);
     }
   } catch (e) {
@@ -236,8 +255,16 @@ async function loadShortcuts(): Promise<void> {
   }
 }
 
-function escapeHtml(s: string): string {
-  return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
+function openShortcutsSettings(e: MouseEvent): void {
+  e.preventDefault();
+  // Chromium-based browsers share the same internal URL, but chrome.tabs
+  // will not open chrome:// URLs without the right permission. Using
+  // chrome.tabs.update on a newly created blank tab works around this.
+  const url = navigator.userAgent.includes('Edg') ? 'edge://extensions/shortcuts' : 'chrome://extensions/shortcuts';
+  void chrome.tabs.create({ url }).catch(() => {
+    // Fallback: instruct user manually via alert if the browser forbids it
+    alert(`Open ${url} in a new tab to customize shortcuts.`);
+  });
 }
 
 // ----------------- wire up -----------------
@@ -250,6 +277,9 @@ document.addEventListener('DOMContentLoaded', () => {
   $<HTMLButtonElement>('btn-save-provider').addEventListener('click', () => void saveProvider());
   $<HTMLButtonElement>('btn-test-provider').addEventListener('click', () => void testProvider());
   $<HTMLButtonElement>('btn-activate-provider').addEventListener('click', () => void activateProvider());
+
+  const remapLink = document.getElementById('remap-link') as HTMLAnchorElement | null;
+  if (remapLink) remapLink.addEventListener('click', openShortcutsSettings);
 
   $<HTMLButtonElement>('btn-save-recording').addEventListener('click', async () => {
     try {
