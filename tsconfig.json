@@ -15,9 +15,8 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "types": ["chrome"],
-    "baseUrl": ".",
     "paths": {
-      "@shared/*": ["src/shared/*"]
+      "@shared/*": ["./src/shared/*"]
     }
   },
   "include": ["src/**/*.ts"]
