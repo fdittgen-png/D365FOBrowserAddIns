@@ -1,0 +1,95 @@
+{
+  "manifest_version": 3,
+  "name": "D365FO Repro Recorder",
+  "version": "0.1.0",
+  "description": "Record D365FO repro scenarios: clicks, navigation, field edits, screenshots. Export as XML bundle or submit to OTRS.",
+  "minimum_chrome_version": "116",
+  "permissions": [
+    "activeTab",
+    "tabs",
+    "storage",
+    "scripting",
+    "downloads"
+  ],
+  "host_permissions": [
+    "https://*.dynamics.com/*",
+    "https://*.operations.dynamics.com/*",
+    "https://*.cloudax.dynamics.com/*"
+  ],
+  "optional_host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ],
+  "background": {
+    "service_worker": "background/service-worker.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "D365FO Repro Recorder",
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "options_ui": {
+    "page": "options/options.html",
+    "open_in_tab": true
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://*.dynamics.com/*",
+        "https://*.operations.dynamics.com/*",
+        "https://*.cloudax.dynamics.com/*"
+      ],
+      "js": ["content/recorder.js"],
+      "run_at": "document_idle",
+      "all_frames": false
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["content/page-hook.js"],
+      "matches": [
+        "https://*.dynamics.com/*",
+        "https://*.operations.dynamics.com/*",
+        "https://*.cloudax.dynamics.com/*"
+      ]
+    }
+  ],
+  "commands": {
+    "toggle-recording": {
+      "suggested_key": {
+        "default": "Alt+Shift+R",
+        "windows": "Alt+Shift+R",
+        "mac": "Alt+Shift+R"
+      },
+      "description": "Start or stop recording"
+    },
+    "take-snapshot": {
+      "suggested_key": {
+        "default": "Alt+Shift+S"
+      },
+      "description": "Take a manual snapshot"
+    },
+    "add-note": {
+      "suggested_key": {
+        "default": "Alt+Shift+N"
+      },
+      "description": "Add a note step"
+    },
+    "pause-resume": {
+      "suggested_key": {
+        "default": "Alt+Shift+P"
+      },
+      "description": "Pause or resume recording"
+    }
+  }
+}

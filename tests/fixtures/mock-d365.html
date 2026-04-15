@@ -1,0 +1,75 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Mock D365FO — Journal voucher</title>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 0; background: #f3f4f6; }
+      .AppBarTitle-content { background:#2563eb; color:white; padding: 10px 16px; font-size:14px; font-weight:600; }
+      .Form-title { background:white; padding: 12px 16px; font-size:18px; font-weight:600; border-bottom: 1px solid #e5e7eb; }
+      .layout { padding: 20px; display:grid; grid-template-columns: 1fr 1fr; gap: 16px; max-width: 900px; }
+      .field { display:flex; flex-direction:column; gap:4px; }
+      .label { font-size: 12px; color: #374151; }
+      input, select, textarea { padding: 6px 8px; border:1px solid #d1d5db; border-radius: 4px; font: inherit; }
+      .toolbar { display:flex; gap:8px; padding: 8px 16px; background: white; border-bottom: 1px solid #e5e7eb; }
+      button { padding: 6px 10px; border:1px solid #d1d5db; border-radius: 4px; background:white; cursor:pointer; font: inherit; }
+      .messageBarError { display:none; background:#fee2e2; color:#991b1b; padding: 10px 16px; border-left: 4px solid #dc2626; margin: 16px 20px; border-radius: 4px; }
+      .messageBarError.show { display:block; }
+    </style>
+  </head>
+  <body>
+    <div class="AppBarTitle-content">Finance and Operations (mock)</div>
+    <div class="Form-title" id="form-title">General journal entries</div>
+    <div class="toolbar">
+      <button id="btn-new" aria-label="New">New</button>
+      <button id="btn-save" aria-label="Save">Save</button>
+      <button id="btn-post" aria-label="Post">Post</button>
+      <button id="btn-nav" aria-label="Go to journal voucher">Open voucher form</button>
+    </div>
+    <div class="messageBarError" id="err">Account X is not valid for posting to journal GenJrn.</div>
+    <div class="layout">
+      <div class="field">
+        <label class="label" for="name">Journal name</label>
+        <input id="name" />
+      </div>
+      <div class="field">
+        <label class="label" for="descr">Description</label>
+        <input id="descr" />
+      </div>
+      <div class="field">
+        <label class="label" for="acct">Account</label>
+        <input id="acct" />
+      </div>
+      <div class="field">
+        <label class="label" for="amount">Amount</label>
+        <input id="amount" type="number" />
+      </div>
+      <div class="field">
+        <label class="label" for="ccy">Currency</label>
+        <select id="ccy">
+          <option>USD</option>
+          <option>EUR</option>
+          <option>GBP</option>
+        </select>
+      </div>
+    </div>
+    <script>
+      const q = new URLSearchParams(location.search);
+      if (!q.get('mi')) {
+        q.set('cmp', 'USMF');
+        q.set('mi', 'LedgerJournalTable');
+        q.set('lng', 'en-us');
+        history.replaceState(null, '', '?' + q.toString());
+      }
+      document.getElementById('btn-nav').addEventListener('click', () => {
+        const q2 = new URLSearchParams(location.search);
+        q2.set('mi', 'LedgerJournalTransDaily');
+        history.pushState(null, '', '?' + q2.toString());
+        document.getElementById('form-title').textContent = 'Journal voucher';
+      });
+      document.getElementById('btn-post').addEventListener('click', () => {
+        document.getElementById('err').classList.add('show');
+      });
+    </script>
+  </body>
+</html>

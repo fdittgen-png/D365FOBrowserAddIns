@@ -1,0 +1,31 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>D365FO Repro Recorder</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header>
+      <h1>Repro Recorder</h1>
+      <span id="state-badge" class="badge idle">Idle</span>
+    </header>
+    <section id="status">
+      <div class="row"><span class="k">Session:</span><span id="session-id" class="v">—</span></div>
+      <div class="row"><span class="k">Steps:</span><span id="step-count" class="v">0</span></div>
+      <div class="row"><span class="k">Tab:</span><span id="tab-info" class="v">—</span></div>
+    </section>
+    <section id="actions">
+      <button id="btn-start" class="primary">Start recording</button>
+      <button id="btn-stop" class="danger" hidden>Stop &amp; review</button>
+      <button id="btn-pause" hidden>Pause</button>
+      <button id="btn-resume" hidden>Resume</button>
+      <button id="btn-review" hidden>Open review</button>
+    </section>
+    <footer>
+      <a href="#" id="open-options">Settings (OTRS)</a>
+      <span class="shortcut">Alt+Shift+R to toggle</span>
+    </footer>
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>

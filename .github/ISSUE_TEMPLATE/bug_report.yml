@@ -1,0 +1,79 @@
+name: Bug report
+description: Report a defect in the extension
+labels: [bug, needs-triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug report. Please fill in the
+        fields below so we can reproduce and fix the issue.
+  - type: input
+    id: version
+    attributes:
+      label: Extension version
+      placeholder: "0.1.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: browser
+    attributes:
+      label: Browser
+      options:
+        - Microsoft Edge (stable)
+        - Google Chrome (stable)
+        - Other Chromium-based
+        - Firefox
+    validations:
+      required: true
+  - type: input
+    id: browser-version
+    attributes:
+      label: Browser version
+      placeholder: "124.0.0.0"
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: "Windows 11, macOS 14, Ubuntu 22.04"
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: Be as specific as possible. If the bug is inside a D365FO tenant, describe the form and action without disclosing tenant names or real data.
+      placeholder: |
+        1. Open a tab on a D365FO tenant
+        2. Click the extension icon and start recording
+        3. Navigate to ...
+        4. Observe ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Console logs or screenshots
+      description: Attach any relevant output. Redact any personal or business data.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-submission checks
+      options:
+        - label: I searched existing issues and this is not a duplicate
+          required: true
+        - label: I removed any personal, tenant, or credential information from my report
+          required: true

@@ -1,0 +1,59 @@
+# Dependencies
+node_modules/
+.pnp/
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+
+# Build output
+dist/
+build/
+out/
+*.zip
+*.crx
+*.xpi
+web-ext-artifacts/
+
+# Testing
+coverage/
+.nyc_output/
+.vitest/
+playwright-report/
+test-results/
+
+# TypeScript
+*.tsbuildinfo
+.tsbuildinfo
+
+# IDE / OS
+.vscode/*
+!.vscode/settings.example.json
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Local state, notes, scratch files
+.remember/
+.scratch/
+.local/
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Packaging artifacts
+*.tgz

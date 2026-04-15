@@ -1,0 +1,48 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Repro Review</title>
+    <link rel="stylesheet" href="review.css" />
+  </head>
+  <body>
+    <header>
+      <div class="title-block">
+        <input id="title" placeholder="Short title of the issue" />
+        <div class="meta">
+          <label>Severity
+            <select id="severity">
+              <option value="low">Low</option>
+              <option value="med" selected>Medium</option>
+              <option value="high">High</option>
+            </select>
+          </label>
+          <label>Tags <input id="tags" placeholder="comma separated" /></label>
+        </div>
+      </div>
+      <div class="actions">
+        <button id="btn-export-xml" class="primary">Export XML bundle</button>
+        <button id="btn-submit-otrs">Submit to OTRS</button>
+      </div>
+    </header>
+
+    <section id="env-info" class="card">
+      <h2>Environment</h2>
+      <dl id="env-list"></dl>
+    </section>
+
+    <section class="card">
+      <h2>Description</h2>
+      <textarea id="description" rows="4" placeholder="Describe the problem, expected vs actual behaviour..."></textarea>
+    </section>
+
+    <section class="card">
+      <h2>Steps</h2>
+      <p class="hint">Tip: click anywhere on this page and press <kbd>Ctrl</kbd>+<kbd>V</kbd> to paste a screenshot from the clipboard. It will be appended as a new step.</p>
+      <ol id="steps-list"></ol>
+    </section>
+
+    <div id="toast" hidden></div>
+    <script type="module" src="review.js"></script>
+  </body>
+</html>

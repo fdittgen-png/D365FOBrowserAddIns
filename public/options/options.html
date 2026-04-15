@@ -1,0 +1,86 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>D365FO Repro Recorder — Settings</title>
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <h1>Settings</h1>
+    <section class="card">
+      <h2>OTRS ticket submission</h2>
+      <p class="hint">Credentials are stored locally in your browser profile. They are only sent to the OTRS endpoint you configure below.</p>
+      <form id="otrs-form">
+        <label>Base URL
+          <input id="otrs-url" placeholder="https://otrs.example.com" required />
+        </label>
+        <label>Web service name
+          <input id="otrs-webservice" placeholder="GenericTicketConnectorREST" required />
+        </label>
+        <label>User login
+          <input id="otrs-user" required />
+        </label>
+        <label>Password
+          <input id="otrs-password" type="password" required />
+        </label>
+        <label>Queue
+          <input id="otrs-queue" placeholder="Support::D365FO" required />
+        </label>
+        <label>Ticket type
+          <input id="otrs-type" placeholder="Incident" value="Incident" />
+        </label>
+        <label>Priority
+          <select id="otrs-priority">
+            <option>1 very low</option>
+            <option>2 low</option>
+            <option selected>3 normal</option>
+            <option>4 high</option>
+            <option>5 very high</option>
+          </select>
+        </label>
+        <label>State
+          <input id="otrs-state" value="new" />
+        </label>
+        <div class="actions">
+          <button type="submit" class="primary">Save</button>
+          <button type="button" id="btn-test">Test connection</button>
+        </div>
+      </form>
+      <p id="save-status" class="hint"></p>
+    </section>
+
+    <section class="card">
+      <h2>Recording</h2>
+      <label class="check">
+        <input type="checkbox" id="opt-auto-snap-nav" checked />
+        Auto-snapshot on navigation
+      </label>
+      <label class="check">
+        <input type="checkbox" id="opt-auto-snap-error" checked />
+        Auto-snapshot on D365FO error banner
+      </label>
+      <label class="check">
+        <input type="checkbox" id="opt-auto-snap-click" />
+        Auto-snapshot on every click (noisier)
+      </label>
+      <label>Max screenshots per session
+        <input id="opt-max-snaps" type="number" min="10" max="1000" value="200" />
+      </label>
+      <div class="actions">
+        <button type="button" id="btn-save-recording" class="primary">Save</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Keyboard shortcuts</h2>
+      <ul>
+        <li><kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd> — start/stop recording</li>
+        <li><kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd> — take snapshot</li>
+        <li><kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>N</kbd> — add note</li>
+        <li><kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> — pause/resume</li>
+      </ul>
+      <p class="hint">You can remap these in <code>chrome://extensions/shortcuts</code> or <code>edge://extensions/shortcuts</code>.</p>
+    </section>
+    <script type="module" src="options.js"></script>
+  </body>
+</html>

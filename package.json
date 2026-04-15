@@ -1,0 +1,40 @@
+{
+  "name": "d365fo-browser-addins",
+  "version": "0.1.0",
+  "description": "Chromium browser extension that records reproduction scenarios for Dynamics 365 Finance & Operations and exports them as a self-contained XML bundle or as a ticket in an external tracker.",
+  "license": "MIT",
+  "author": "Frank Dittgen",
+  "homepage": "https://github.com/fdittgen-png/D365FOBrowserAddIns",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fdittgen-png/D365FOBrowserAddIns.git"
+  },
+  "bugs": {
+    "url": "https://github.com/fdittgen-png/D365FOBrowserAddIns/issues"
+  },
+  "keywords": [
+    "dynamics-365",
+    "d365fo",
+    "browser-extension",
+    "chrome-extension",
+    "edge-extension",
+    "manifest-v3",
+    "bug-reporting",
+    "repro-recorder"
+  ],
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "watch": "node scripts/build.mjs --watch",
+    "typecheck": "tsc --noEmit",
+    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\""
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.268",
+    "esbuild": "^0.21.5",
+    "typescript": "^5.4.5"
+  }
+}

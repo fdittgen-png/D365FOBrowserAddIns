@@ -1,0 +1,19 @@
+# Normalize line endings on checkin
+* text=auto eol=lf
+
+# Binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.zip binary
+*.crx binary
+*.xpi binary
+
+# Generated / lockfiles — mark as generated so GitHub collapses them in diffs
+package-lock.json linguist-generated=true
+pnpm-lock.yaml   linguist-generated=true
+yarn.lock        linguist-generated=true
+dist/**          linguist-generated=true
