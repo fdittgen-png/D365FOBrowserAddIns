@@ -7,33 +7,33 @@
   </head>
   <body>
     <header>
-      <h1>Repro Recorder</h1>
+      <h1 data-i18n="popupTitle">Repro Recorder</h1>
       <span id="state-badge" class="badge idle" aria-live="polite">Idle</span>
     </header>
     <section id="recover-banner" class="recover" hidden>
-      <div class="recover-title">Unsaved recording found</div>
+      <div class="recover-title" data-i18n="recoverTitle">Unsaved recording found</div>
       <div class="recover-sub" id="recover-sub"></div>
       <div class="recover-actions">
-        <button id="btn-recover-resume" class="primary">Resume</button>
-        <button id="btn-recover-review">Review</button>
-        <button id="btn-recover-discard" class="danger">Discard</button>
+        <button id="btn-recover-resume" type="button" class="primary" data-i18n="recoverResume">Resume</button>
+        <button id="btn-recover-review" type="button" data-i18n="recoverReview">Review</button>
+        <button id="btn-recover-discard" type="button" class="danger" data-i18n="recoverDiscard">Discard</button>
       </div>
     </section>
     <section id="status">
-      <div class="row"><span class="k">Session:</span><span id="session-id" class="v">—</span></div>
-      <div class="row"><span class="k">Steps:</span><span id="step-count" class="v">0</span></div>
-      <div class="row"><span class="k">Tab:</span><span id="tab-info" class="v">—</span></div>
+      <div class="row"><span class="k" data-i18n="popupLabelSession">Session:</span><span id="session-id" class="v">—</span></div>
+      <div class="row"><span class="k" data-i18n="popupLabelSteps">Steps:</span><span id="step-count" class="v">0</span></div>
+      <div class="row"><span class="k" data-i18n="popupLabelTab">Tab:</span><span id="tab-info" class="v">—</span></div>
     </section>
     <section id="actions">
-      <button id="btn-start" class="primary">Start recording</button>
-      <button id="btn-stop" class="danger" hidden>Stop &amp; review</button>
-      <button id="btn-pause" hidden>Pause</button>
-      <button id="btn-resume" hidden>Resume</button>
-      <button id="btn-review" hidden>Open review</button>
+      <button id="btn-start" type="button" class="primary" data-i18n="popupStart">Start recording</button>
+      <button id="btn-stop" type="button" class="danger" hidden data-i18n="popupStop">Stop &amp; review</button>
+      <button id="btn-pause" type="button" hidden data-i18n="popupPause">Pause</button>
+      <button id="btn-resume" type="button" hidden data-i18n="popupResume">Resume</button>
+      <button id="btn-review" type="button" hidden data-i18n="popupOpenReview">Open review</button>
     </section>
     <footer>
-      <a href="#" id="open-options">Settings (OTRS)</a>
-      <span class="shortcut">Alt+Shift+R to toggle</span>
+      <a href="#" id="open-options" data-i18n="popupOpenSettings">Settings (OTRS)</a>
+      <span class="shortcut" data-i18n="popupShortcutHint">Alt+Shift+R to toggle</span>
     </footer>
     <script type="module" src="popup.js"></script>
   </body>

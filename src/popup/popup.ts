@@ -1,5 +1,6 @@
 import { send } from '@shared/messaging';
 import type { Session } from '@shared/types';
+import { applyI18n, t } from '@shared/i18n';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 
@@ -55,7 +56,7 @@ async function refresh(): Promise<void> {
 
   if (session && (session.state === 'recording' || session.state === 'paused')) {
     badge.className = `badge ${session.state}`;
-    badge.textContent = session.state === 'recording' ? 'Recording' : 'Paused';
+    badge.textContent = session.state === 'recording' ? t('stateRecording') : t('statePaused');
     sid.textContent = session.id.slice(-8);
     stepCount.textContent = String(session.steps.length);
     tabInfo.textContent = session.environment.company ?? session.environment.host;
@@ -66,7 +67,7 @@ async function refresh(): Promise<void> {
     btnReview.hidden = false;
   } else {
     badge.className = 'badge idle';
-    badge.textContent = 'Idle';
+    badge.textContent = t('stateIdle');
     sid.textContent = '—';
     stepCount.textContent = '0';
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -88,6 +89,7 @@ function toast(msg: string): void {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  applyI18n();
   void refresh();
 
   $<HTMLButtonElement>('btn-start').addEventListener('click', async () => {

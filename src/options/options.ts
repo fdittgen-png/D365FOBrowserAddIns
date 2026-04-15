@@ -2,6 +2,7 @@ import { getOptions, setOptions, getTrackerSettings, setTrackerSettings } from '
 import type { RecordingOptions } from '@shared/types';
 import { TRACKER_PROVIDERS, getProvider, applyDefaults } from '@shared/trackers';
 import type { ConfigSchema, ConfigField, TrackerProvider } from '@shared/trackers';
+import { applyI18n } from '@shared/i18n';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 
@@ -270,6 +271,7 @@ function openShortcutsSettings(e: MouseEvent): void {
 // ----------------- wire up -----------------
 
 document.addEventListener('DOMContentLoaded', () => {
+  applyI18n();
   void loadProviderUi();
   void loadOptions();
   void loadShortcuts();

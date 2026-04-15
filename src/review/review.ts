@@ -1,5 +1,6 @@
 import { send } from '@shared/messaging';
 import type { Message, Session, Step } from '@shared/types';
+import { applyI18n } from '@shared/i18n';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const snapCache = new Map<string, string>();
@@ -174,6 +175,7 @@ function toast(msg: string): void {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  applyI18n();
   void loadSession();
 
   const onMetaChange = () => markDirty();

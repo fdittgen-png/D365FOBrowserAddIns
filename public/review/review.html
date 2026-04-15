@@ -9,13 +9,13 @@
     <header>
       <div class="title-block">
         <label class="sr-only" for="title">Issue title</label>
-        <input id="title" placeholder="Short title of the issue" aria-label="Issue title" />
+        <input id="title" data-i18n-placeholder="reviewTitlePlaceholder" placeholder="Short title of the issue" aria-label="Issue title" />
         <div class="meta">
           <label>Severity
             <select id="severity" aria-label="Issue severity">
-              <option value="low">Low</option>
-              <option value="med" selected>Medium</option>
-              <option value="high">High</option>
+              <option value="low" data-i18n="severityLow">Low</option>
+              <option value="med" selected data-i18n="severityMed">Medium</option>
+              <option value="high" data-i18n="severityHigh">High</option>
             </select>
           </label>
           <label>Tags
@@ -24,23 +24,23 @@
         </div>
       </div>
       <div class="actions">
-        <button id="btn-export-xml" type="button" class="primary">Export XML bundle</button>
-        <button id="btn-submit-tracker" type="button">Submit to tracker</button>
+        <button id="btn-export-xml" type="button" class="primary" data-i18n="reviewExport">Export XML bundle</button>
+        <button id="btn-submit-tracker" type="button" data-i18n="reviewSubmit">Submit to tracker</button>
       </div>
     </header>
 
     <section id="env-info" class="card">
-      <h2>Environment</h2>
+      <h2 data-i18n="reviewSectionEnvironment">Environment</h2>
       <dl id="env-list"></dl>
     </section>
 
     <section class="card">
-      <h2>Description</h2>
-      <textarea id="description" rows="4" placeholder="Describe the problem, expected vs actual behaviour..."></textarea>
+      <h2 data-i18n="reviewSectionDescription">Description</h2>
+      <textarea id="description" rows="4" data-i18n-placeholder="reviewDescriptionPlaceholder" placeholder="Describe the problem, expected vs actual behaviour..."></textarea>
     </section>
 
     <section class="card">
-      <h2>Steps</h2>
+      <h2 data-i18n="reviewSectionSteps">Steps</h2>
       <p class="hint">Tip: click anywhere on this page and press <kbd>Ctrl</kbd>+<kbd>V</kbd> to paste a screenshot from the clipboard. It will be appended as a new step.</p>
       <ol id="steps-list"></ol>
     </section>

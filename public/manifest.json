@@ -1,8 +1,9 @@
 {
   "manifest_version": 3,
-  "name": "D365FO Repro Recorder",
+  "name": "__MSG_extName__",
   "version": "0.1.0",
-  "description": "Record D365FO repro scenarios: clicks, navigation, field edits, screenshots. Export as XML bundle or submit to OTRS.",
+  "description": "__MSG_extDescription__",
+  "default_locale": "en",
   "minimum_chrome_version": "116",
   "permissions": [
     "activeTab",
@@ -25,7 +26,7 @@
     "type": "module"
   },
   "action": {
-    "default_title": "D365FO Repro Recorder",
+    "default_title": "__MSG_extName__",
     "default_popup": "popup/popup.html",
     "default_icon": {
       "16": "icons/icon16.png",
@@ -71,25 +72,25 @@
         "windows": "Alt+Shift+R",
         "mac": "Alt+Shift+R"
       },
-      "description": "Start or stop recording"
+      "description": "__MSG_commandToggleRecording__"
     },
     "take-snapshot": {
       "suggested_key": {
         "default": "Alt+Shift+S"
       },
-      "description": "Take a manual snapshot"
+      "description": "__MSG_commandTakeSnapshot__"
     },
     "add-note": {
       "suggested_key": {
         "default": "Alt+Shift+N"
       },
-      "description": "Add a note step"
+      "description": "__MSG_commandAddNote__"
     },
     "pause-resume": {
       "suggested_key": {
         "default": "Alt+Shift+P"
       },
-      "description": "Pause or resume recording"
+      "description": "__MSG_commandPauseResume__"
     }
   }
 }
