@@ -15,7 +15,10 @@ import {
   fetchWithTimeout,
   resolveTimeout,
   sanitizeTrackerError,
+  mapLimit,
 } from './common';
+
+const JIRA_UPLOAD_CONCURRENCY = 4;
 
 export interface JiraConfig extends Record<string, unknown> {
   siteUrl: string;
@@ -123,10 +126,11 @@ export class JiraProvider implements TrackerProvider<JiraConfig> {
     const created = JSON.parse(createText) as { id?: string; key?: string };
     if (!created.key) throw new Error('Jira create returned no key');
 
-    // Attach files. On failure, try to roll back by deleting the just-created
-    // issue so we never leave half-populated tickets behind.
+    // Attach files in parallel with a small concurrency cap. On any failure
+    // all in-flight uploads finish, then we roll back by deleting the
+    // just-created issue so we never leave half-populated tickets behind.
     try {
-      for (const att of attachments) {
+      await mapLimit(attachments, JIRA_UPLOAD_CONCURRENCY, async (att) => {
         const form = new FormData();
         const blob = new Blob([att.bytes as BlobPart], { type: att.mime });
         form.append('file', blob, att.filename);
@@ -143,7 +147,7 @@ export class JiraProvider implements TrackerProvider<JiraConfig> {
           const t = await r.text();
           throw new Error(`attachment ${att.filename} failed: HTTP ${r.status} — ${sanitizeTrackerError(t, 200)}`);
         }
-      }
+      });
     } catch (e) {
       await fetchWithTimeout(
         `${trim(config.siteUrl)}/rest/api/3/issue/${created.key}`,

@@ -15,7 +15,10 @@ import {
   fetchWithTimeout,
   resolveTimeout,
   sanitizeTrackerError,
+  mapLimit,
 } from './common';
+
+const ADO_UPLOAD_CONCURRENCY = 4;
 
 export interface AzureDevOpsConfig extends Record<string, unknown> {
   organizationUrl: string;
@@ -88,9 +91,9 @@ export class AzureDevOpsProvider implements TrackerProvider<AzureDevOpsConfig> {
     const headers = this.authHeaders(config);
     const timeout = resolveTimeout(config);
 
-    // 1. Upload attachments first so the work-item create can reference them.
-    const uploaded: { url: string; name: string }[] = [];
-    for (const att of attachments) {
+    // 1. Upload attachments first (in parallel, bounded concurrency) so the
+    // work-item create can reference them.
+    const uploaded = await mapLimit(attachments, ADO_UPLOAD_CONCURRENCY, async (att) => {
       const uploadUrl = `${trim(config.organizationUrl)}/${encodeURIComponent(config.project)}/_apis/wit/attachments?fileName=${encodeURIComponent(att.filename)}&api-version=${apiVersion}`;
       const resp = await fetchWithTimeout(
         uploadUrl,
@@ -105,8 +108,8 @@ export class AzureDevOpsProvider implements TrackerProvider<AzureDevOpsConfig> {
       if (!resp.ok) throw new Error(`Attachment upload failed for ${att.filename}: HTTP ${resp.status} — ${sanitizeTrackerError(text, 200)}`);
       const parsed = JSON.parse(text) as { url?: string };
       if (!parsed.url) throw new Error(`Attachment upload returned no url for ${att.filename}`);
-      uploaded.push({ url: parsed.url, name: att.filename });
-    }
+      return { url: parsed.url, name: att.filename };
+    });
 
     // 2. Build the JSON Patch document for work item creation.
     const ops: Array<{ op: 'add'; path: string; value: unknown }> = [

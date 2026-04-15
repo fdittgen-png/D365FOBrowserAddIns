@@ -117,6 +117,48 @@ export function bytesToBase64(bytes: Uint8Array): string {
 }
 
 /**
+ * Run an async `fn` over every item in `items` with at most `limit` calls
+ * in flight at any time. Results are returned in the same order as the
+ * input. If any call throws, in-flight calls finish and then the error
+ * rejects the returned promise.
+ *
+ * Used by Jira / Azure DevOps attachment uploads so a session with 100
+ * screenshots doesn't serialize into 100 sequential HTTP round-trips.
+ */
+export async function mapLimit<T, R>(
+  items: readonly T[],
+  limit: number,
+  fn: (item: T, index: number) => Promise<R>,
+): Promise<R[]> {
+  if (limit <= 0) throw new Error('mapLimit: limit must be > 0');
+  const results: R[] = new Array(items.length);
+  let next = 0;
+  let aborted: Error | null = null;
+  const workers: Promise<void>[] = [];
+  const workerCount = Math.min(limit, items.length);
+  for (let w = 0; w < workerCount; w++) {
+    workers.push(
+      (async () => {
+        while (true) {
+          if (aborted) return;
+          const idx = next++;
+          if (idx >= items.length) return;
+          try {
+            results[idx] = await fn(items[idx]!, idx);
+          } catch (e) {
+            if (!aborted) aborted = e as Error;
+            return;
+          }
+        }
+      })(),
+    );
+  }
+  await Promise.all(workers);
+  if (aborted) throw aborted;
+  return results;
+}
+
+/**
  * Strip secrets from a response body snippet before surfacing it in a
  * user-facing error message. Providers often echo parts of the request on
  * error, and that echo can contain Authorization headers, passwords, API
