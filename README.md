@@ -55,7 +55,8 @@ Load the built extension:
 4. Pin the extension to the toolbar.
 
 For a step-by-step walk-through with annotated notes on every feature,
-see the [user guide](docs/user-guide.md).
+see the [user guide](docs/user-guide.md). Supported browsers and minimum
+versions are listed in the [compatibility matrix](docs/compatibility.md).
 
 ## Usage
 
