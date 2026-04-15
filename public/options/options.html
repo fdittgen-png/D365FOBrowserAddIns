@@ -46,6 +46,13 @@
       <label>Max screenshots per session
         <input id="opt-max-snaps" type="number" min="10" max="1000" value="200" />
       </label>
+      <label>Screenshot strategy
+        <select id="opt-capture-strategy">
+          <option value="viewport">Visible viewport only (default, fastest)</option>
+          <option value="stitch">Full page via scroll stitching (no extra permissions)</option>
+          <option value="debugger">High-fidelity full page (requires debugger permission, shows a yellow bar)</option>
+        </select>
+      </label>
       <div class="actions">
         <button type="button" id="btn-save-recording" class="primary">Save</button>
       </div>

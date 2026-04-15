@@ -202,9 +202,11 @@ async function loadOptions(): Promise<void> {
   ($<HTMLInputElement>('opt-auto-snap-error')).checked = opts.autoSnapOnError;
   ($<HTMLInputElement>('opt-auto-snap-click')).checked = opts.autoSnapOnClick;
   ($<HTMLInputElement>('opt-max-snaps')).value = String(opts.maxSnapshotsPerSession);
+  ($<HTMLSelectElement>('opt-capture-strategy')).value = opts.captureStrategy;
 }
 
 function readOptionsForm(): RecordingOptions {
+  const strategy = ($<HTMLSelectElement>('opt-capture-strategy')).value as RecordingOptions['captureStrategy'];
   return {
     autoSnapOnNavigate: ($<HTMLInputElement>('opt-auto-snap-nav')).checked,
     autoSnapOnError: ($<HTMLInputElement>('opt-auto-snap-error')).checked,
@@ -213,7 +215,16 @@ function readOptionsForm(): RecordingOptions {
       10,
       Math.min(1000, parseInt(($<HTMLInputElement>('opt-max-snaps')).value, 10) || 200),
     ),
+    captureStrategy: strategy,
   };
+}
+
+async function maybeRequestDebuggerPermission(): Promise<boolean> {
+  const strategy = ($<HTMLSelectElement>('opt-capture-strategy')).value;
+  if (strategy !== 'debugger') return true;
+  const has = await chrome.permissions.contains({ permissions: ['debugger'] });
+  if (has) return true;
+  return chrome.permissions.request({ permissions: ['debugger'] });
 }
 
 // ----------------- keyboard shortcuts (also handles issue #20) -----------------
@@ -285,6 +296,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   $<HTMLButtonElement>('btn-save-recording').addEventListener('click', async () => {
     try {
+      const granted = await maybeRequestDebuggerPermission();
+      if (!granted) {
+        setStatus('Debugger permission denied. Falling back to viewport capture.', true);
+        ($<HTMLSelectElement>('opt-capture-strategy')).value = 'viewport';
+      }
       await setOptions(readOptionsForm());
       setStatus('Recording options saved.');
     } catch (err) {

@@ -8,6 +8,8 @@ import {
   getArchivedSession,
   getOptions,
 } from '@shared/storage';
+// getOptions used both by snapshotAndAttach (auto-snap decisions) and
+// captureForTab (strategy selection) — same import covers both.
 import type {
   Message,
   MessageResponse,
@@ -21,6 +23,7 @@ import { exportSessionAsZip } from '@shared/exporter';
 import { getTrackerSettings } from '@shared/storage';
 import { getProvider, TRACKER_PROVIDERS } from '@shared/trackers';
 import { collectAttachments } from '@shared/trackers/common';
+import { captureFullPage } from './full-page-capture';
 
 // ----------------- capture throttle -----------------
 
@@ -35,7 +38,7 @@ function drainQueue(): void {
   if (next) next();
 }
 
-async function captureVisibleForTab(tabId: number): Promise<Blob | null> {
+async function captureForTab(tabId: number): Promise<Blob | null> {
   return new Promise((resolve) => {
     const run = async () => {
       captureBusy = true;
@@ -46,10 +49,19 @@ async function captureVisibleForTab(tabId: number): Promise<Blob | null> {
         }
         const tab = await chrome.tabs.get(tabId).catch(() => null);
         if (!tab || tab.windowId == null) return resolve(null);
-        const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
+
+        const opts = await getOptions();
+        if (opts.captureStrategy === 'viewport') {
+          const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
+          lastCaptureAt = Date.now();
+          const resp = await fetch(dataUrl);
+          const blob = await resp.blob();
+          resolve(blob);
+          return;
+        }
+        // Full-page strategies — scroll stitching or debugger protocol
+        const blob = await captureFullPage({ tabId, strategy: opts.captureStrategy });
         lastCaptureAt = Date.now();
-        const resp = await fetch(dataUrl);
-        const blob = await resp.blob();
         resolve(blob);
       } catch (e) {
         console.warn('[repro] capture failed', e);
@@ -109,7 +121,7 @@ async function snapshotAndAttach(session: Session, stepId?: string): Promise<str
     console.warn('[repro] snapshot cap reached');
     return null;
   }
-  const blob = await captureVisibleForTab(session.tabId);
+  const blob = await captureForTab(session.tabId);
   if (!blob) return null;
   const snap: SnapshotBlob = {
     id: uid('img'),

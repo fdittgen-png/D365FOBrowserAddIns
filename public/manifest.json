@@ -21,6 +21,9 @@
     "http://*/*",
     "https://*/*"
   ],
+  "optional_permissions": [
+    "debugger"
+  ],
   "background": {
     "service_worker": "background/service-worker.js",
     "type": "module"

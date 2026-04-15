@@ -105,11 +105,14 @@ export interface Session {
   steps: Step[];
 }
 
+export type CaptureStrategy = 'viewport' | 'stitch' | 'debugger';
+
 export interface RecordingOptions {
   autoSnapOnNavigate: boolean;
   autoSnapOnError: boolean;
   autoSnapOnClick: boolean;
   maxSnapshotsPerSession: number;
+  captureStrategy: CaptureStrategy;
 }
 
 export const DEFAULT_OPTIONS: RecordingOptions = {
@@ -117,6 +120,7 @@ export const DEFAULT_OPTIONS: RecordingOptions = {
   autoSnapOnError: true,
   autoSnapOnClick: false,
   maxSnapshotsPerSession: 200,
+  captureStrategy: 'viewport',
 };
 
 export interface SnapshotBlob {
