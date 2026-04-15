@@ -4,7 +4,7 @@
     "description": "Name of the extension shown in the browser UI"
   },
   "extDescription": {
-    "message": "Record reproduction scenarios for Dynamics 365 Finance & Operations issues: clicks, navigation, field edits, and screenshots. Export as XML or submit to a ticket tracker."
+    "message": "Record D365FO repro sessions: clicks, edits, errors, screenshots. Export as XML or DOCX, submit to tracker."
   },
   "popupTitle": { "message": "Repro Recorder" },
   "stateIdle": { "message": "Idle" },

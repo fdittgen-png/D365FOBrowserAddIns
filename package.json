@@ -31,6 +31,7 @@
     "build": "node scripts/build.mjs",
     "validate:manifest": "node scripts/validate-manifest.mjs",
     "check:size": "node scripts/check-bundle-size.mjs",
+    "package:store": "node scripts/package-store.mjs",
     "watch": "node scripts/build.mjs --watch",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.test.json",
     "lint": "eslint .",
