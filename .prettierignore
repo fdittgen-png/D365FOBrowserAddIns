@@ -1,0 +1,11 @@
+dist/
+node_modules/
+coverage/
+playwright-report/
+test-results/
+*.md
+CHANGELOG.md
+public/_locales/
+public/icons/
+package-lock.json
+.scratch/

@@ -12,7 +12,8 @@ import {
   getCurrentUser,
   setAdapterWarningSink,
 } from './d365-adapter';
-import { mountOverlay, OverlayHandle } from './overlay';
+import type { OverlayHandle } from './overlay';
+import { mountOverlay } from './overlay';
 
 /**
  * Content script. Lifecycle:

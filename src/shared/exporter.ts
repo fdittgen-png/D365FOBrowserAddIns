@@ -1,6 +1,7 @@
 import type { Session, Step } from './types';
 import { getSnapshotsBySession } from './storage';
-import { buildZip, ZipEntry } from './zip';
+import type { ZipEntry } from './zip';
+import { buildZip } from './zip';
 
 /**
  * Exports a session as a .zip bundle containing:

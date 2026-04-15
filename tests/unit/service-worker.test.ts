@@ -36,8 +36,15 @@ const fakeProvider = vi.hoisted(() => ({
   }),
 }));
 
+import type * as TrackersModuleT from '@shared/trackers';
+import type * as TrackersCommonModuleT from '@shared/trackers/common';
+import type * as MessagingModuleT from '@shared/messaging';
+type TrackersModule = typeof TrackersModuleT;
+type TrackersCommonModule = typeof TrackersCommonModuleT;
+type MessagingModule = typeof MessagingModuleT;
+
 vi.mock('@shared/trackers', async () => {
-  const actual = await vi.importActual<typeof import('@shared/trackers')>('@shared/trackers');
+  const actual = await vi.importActual<TrackersModule>('@shared/trackers');
   return {
     ...actual,
     TRACKER_PROVIDERS: [fakeProvider],
@@ -46,9 +53,7 @@ vi.mock('@shared/trackers', async () => {
 });
 
 vi.mock('@shared/trackers/common', async () => {
-  const actual = await vi.importActual<typeof import('@shared/trackers/common')>(
-    '@shared/trackers/common',
-  );
+  const actual = await vi.importActual<TrackersCommonModule>('@shared/trackers/common');
   return {
     ...actual,
     collectAttachments: vi.fn().mockResolvedValue({
@@ -68,7 +73,7 @@ vi.mock('../../src/background/full-page-capture', () => ({
 // The messaging module's onMessage() is called at module load to register
 // the router. Stub it so our tests don't try to use chrome.runtime.onMessage.
 vi.mock('@shared/messaging', async () => {
-  const actual = await vi.importActual<typeof import('@shared/messaging')>('@shared/messaging');
+  const actual = await vi.importActual<MessagingModule>('@shared/messaging');
   return {
     ...actual,
     onMessage: vi.fn(),

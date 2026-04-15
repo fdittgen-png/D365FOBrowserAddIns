@@ -31,7 +31,7 @@ async function refresh(): Promise<void> {
       await chrome.tabs.get(session.tabId);
       tabStillOpen = true;
     } catch {
-      tabStillOpen = false;
+      /* tab is gone */
     }
     if (!tabStillOpen) {
       banner.hidden = false;
