@@ -10,6 +10,15 @@
       <h1>Repro Recorder</h1>
       <span id="state-badge" class="badge idle">Idle</span>
     </header>
+    <section id="recover-banner" class="recover" hidden>
+      <div class="recover-title">Unsaved recording found</div>
+      <div class="recover-sub" id="recover-sub"></div>
+      <div class="recover-actions">
+        <button id="btn-recover-resume" class="primary">Resume</button>
+        <button id="btn-recover-review">Review</button>
+        <button id="btn-recover-discard" class="danger">Discard</button>
+      </div>
+    </section>
     <section id="status">
       <div class="row"><span class="k">Session:</span><span id="session-id" class="v">—</span></div>
       <div class="row"><span class="k">Steps:</span><span id="step-count" class="v">0</span></div>

@@ -148,6 +148,9 @@ export type Message =
   | { type: 'POPUP_PAUSE' }
   | { type: 'POPUP_RESUME' }
   | { type: 'POPUP_OPEN_REVIEW' }
+  | { type: 'POPUP_RECOVER_RESUME' }
+  | { type: 'POPUP_RECOVER_REVIEW' }
+  | { type: 'POPUP_RECOVER_DISCARD' }
   // review -> background
   | { type: 'REVIEW_GET_SESSION'; sessionId: string }
   | { type: 'REVIEW_UPDATE_SESSION'; session: Session }

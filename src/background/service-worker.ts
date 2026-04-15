@@ -210,6 +210,52 @@ onMessage(async (msg: Message, sender): Promise<MessageResponse> => {
       return { ok: true };
     }
 
+    case 'POPUP_RECOVER_RESUME': {
+      // Session is already in chrome.storage.local — just make sure its
+      // state is 'recording' and the active tab gets the content script
+      // reattached. The content script's reconnectIfActive() handles the
+      // rest on next page load.
+      const s = await getActiveSession();
+      if (!s) return { ok: false, error: 'no-session' };
+      s.state = 'recording';
+      // Rebind to the current active tab in case the original tab is gone.
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (tab?.id) s.tabId = tab.id;
+      await setActiveSession(s);
+      if (tab?.id) {
+        try {
+          await chrome.tabs.sendMessage(tab.id, { type: 'POPUP_START' } satisfies Message);
+        } catch {
+          // content script will attach on next navigation
+        }
+      }
+      return { ok: true, data: { sessionId: s.id, tabId: s.tabId } };
+    }
+
+    case 'POPUP_RECOVER_REVIEW': {
+      const s = await getActiveSession();
+      if (!s) return { ok: false, error: 'no-session' };
+      // Move the recovered session to the archive without extending it
+      s.state = 'stopped';
+      s.endedAt = s.endedAt ?? Date.now();
+      await archiveSession(s);
+      await setActiveSession(null);
+      const url = chrome.runtime.getURL(`review/review.html#${s.id}`);
+      await chrome.tabs.create({ url });
+      return { ok: true, data: { sessionId: s.id } };
+    }
+
+    case 'POPUP_RECOVER_DISCARD': {
+      // Archive first so nothing is irrevocably lost, then clear active slot.
+      const s = await getActiveSession();
+      if (!s) return { ok: true };
+      s.state = 'stopped';
+      s.endedAt = s.endedAt ?? Date.now();
+      await archiveSession(s);
+      await setActiveSession(null);
+      return { ok: true, data: { archivedId: s.id } };
+    }
+
     case 'STEP_EVENT': {
       const session = await getActiveSession();
       if (!session || session.state !== 'recording') return { ok: false, error: 'not-recording' };
