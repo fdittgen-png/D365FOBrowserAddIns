@@ -147,6 +147,7 @@ export type Message =
   | { type: 'ERROR_DETECTED'; message: string; formTitle?: string }
   // popup -> background
   | { type: 'POPUP_GET_STATE' }
+  | { type: 'GET_MY_TAB_ID' }
   | { type: 'POPUP_START' }
   | { type: 'POPUP_STOP' }
   | { type: 'POPUP_PAUSE' }

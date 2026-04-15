@@ -215,6 +215,13 @@ onMessage(async (msg: Message, sender): Promise<MessageResponse> => {
       return { ok: true, data: session };
     }
 
+    case 'GET_MY_TAB_ID': {
+      // Returns the caller's tab id. Used by the content script's
+      // reconnectIfActive() to verify it's running in the tab bound to the
+      // current session before reattaching listeners.
+      return { ok: true, data: sender.tab?.id };
+    }
+
     case 'POPUP_OPEN_REVIEW': {
       const s = await getActiveSession();
       if (!s) return { ok: false, error: 'no-session' };

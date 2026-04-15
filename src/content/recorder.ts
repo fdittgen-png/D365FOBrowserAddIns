@@ -237,6 +237,12 @@ async function reconnectIfActive(): Promise<void> {
   if (!resp.ok || !resp.data) return;
   const session = resp.data;
   if (session.state !== 'recording' && session.state !== 'paused') return;
+  // Don't reattach in tabs that aren't the one the session was bound to —
+  // otherwise the overlay appears on unrelated D365FO tabs and every event
+  // they emit gets rejected with wrong-tab.
+  const tabResp = await send<number | undefined>({ type: 'GET_MY_TAB_ID' });
+  if (!tabResp.ok || tabResp.data == null) return;
+  if (session.tabId !== tabResp.data) return;
   // Session is alive (likely a redirect/reload) — reattach
   injectPageHook();
   recording = true;
