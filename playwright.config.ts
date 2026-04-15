@@ -26,7 +26,7 @@ export default defineConfig({
     screenshot: 'only-on-failure',
   },
   webServer: {
-    command: 'npx --yes http-server -p 4567 -s tests/fixtures',
+    command: 'node scripts/serve-fixtures.mjs',
     port: 4567,
     reuseExistingServer: !process.env.CI,
     timeout: 30_000,
