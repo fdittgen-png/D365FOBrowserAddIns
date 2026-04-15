@@ -1,4 +1,24 @@
-import type { Message, MessageResponse } from './types';
+import type { Message, MessageResponse, Step } from './types';
+
+/**
+ * Input shape for a step event — every field of the chosen Step variant
+ * except the id and timestamp, which the background stamps. Use via the
+ * per-kind helpers below (or the generic stepEvent<K>) to emit step events
+ * without resorting to unsafe casts.
+ */
+export type StepInput<K extends Step['kind']> = Omit<Extract<Step, { kind: K }>, 'id' | 'ts'>;
+
+export function stepEvent<K extends Step['kind']>(
+  step: StepInput<K>,
+): Extract<Message, { type: 'STEP_EVENT' }> {
+  return { type: 'STEP_EVENT', step: step as unknown as Extract<Message, { type: 'STEP_EVENT' }>['step'] };
+}
+
+export function emitStep<K extends Step['kind']>(
+  step: StepInput<K>,
+): Promise<MessageResponse> {
+  return send(stepEvent<K>(step));
+}
 
 export async function send<T = unknown>(msg: Message): Promise<MessageResponse<T>> {
   try {

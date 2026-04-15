@@ -1,4 +1,4 @@
-import { send, onMessage } from '@shared/messaging';
+import { send, onMessage, emitStep } from '@shared/messaging';
 import type { Message, MessageResponse, Environment, Session } from '@shared/types';
 import { EXT_VERSION } from '@shared/types';
 import {
@@ -77,11 +77,7 @@ function handleClick(ev: MouseEvent): void {
   if ((ev.target as Element | null)?.closest?.('#d365-repro-overlay-host')) return;
   const found = resolveClickable(ev.target);
   if (!found) return;
-  const formTitle = getFormTitle();
-  void send({
-    type: 'STEP_EVENT',
-    step: { kind: 'click', label: found.label, role: found.role, formTitle } as unknown as Message extends { type: 'STEP_EVENT'; step: infer S } ? S : never,
-  });
+  void emitStep<'click'>({ kind: 'click', label: found.label, role: found.role, formTitle: getFormTitle() });
 }
 
 function handleFocusIn(ev: FocusEvent): void {
@@ -123,15 +119,12 @@ function commitEdit(el: HTMLElement): void {
   const newValue = getFieldValue(el);
   if (newValue === focusValue) return;
   const label = resolveFieldLabel(el) ?? '(unlabeled field)';
-  void send({
-    type: 'STEP_EVENT',
-    step: {
-      kind: 'edit',
-      fieldLabel: label,
-      oldValue: focusValue,
-      newValue,
-      formTitle: getFormTitle(),
-    } as unknown as never,
+  void emitStep<'edit'>({
+    kind: 'edit',
+    fieldLabel: label,
+    oldValue: focusValue,
+    newValue,
+    formTitle: getFormTitle(),
   });
   focusValue = newValue;
 }
@@ -144,15 +137,12 @@ function handleNavigate(): void {
   const info = parseUrl(url);
   // Delay slightly so getFormTitle has rendered content
   setTimeout(() => {
-    void send({
-      type: 'STEP_EVENT',
-      step: {
-        kind: 'navigate',
-        url,
-        menuItem: info.menuItem,
-        company: info.company,
-        formTitle: getFormTitle(),
-      } as unknown as never,
+    void emitStep<'navigate'>({
+      kind: 'navigate',
+      url,
+      menuItem: info.menuItem,
+      company: info.company,
+      formTitle: getFormTitle(),
     });
   }, 150);
 }
@@ -181,12 +171,9 @@ function attachListeners(): void {
     if (seenWarnings.has(key)) return;
     seenWarnings.add(key);
     console.warn('[repro] adapter selector miss', w);
-    void send({
-      type: 'STEP_EVENT',
-      step: {
-        kind: 'note',
-        text: `[adapter-warning] ${w.kind}: ${w.reason}${w.sample ? ` (${w.sample})` : ''}`,
-      } as unknown as never,
+    void emitStep<'note'>({
+      kind: 'note',
+      text: `[adapter-warning] ${w.kind}: ${w.reason}${w.sample ? ` (${w.sample})` : ''}`,
     });
   });
 }
@@ -208,7 +195,7 @@ function ensureOverlay(): OverlayHandle {
   if (overlay) return overlay;
   overlay = mountOverlay({
     onSnapshot: () => void send({ type: 'REQUEST_SNAPSHOT', reason: 'manual' }),
-    onAddNote: (text) => void send({ type: 'STEP_EVENT', step: { kind: 'note', text } as unknown as never }),
+    onAddNote: (text) => void emitStep<'note'>({ kind: 'note', text }),
     onPause: () => void send({ type: 'SESSION_PAUSE' }),
     onResume: () => void send({ type: 'SESSION_RESUME' }),
     onStop: () => void send({ type: 'SESSION_STOP' }),
@@ -236,15 +223,12 @@ async function startRecording(): Promise<void> {
   const h = ensureOverlay();
   h.setState('recording', 0);
   // Emit an initial navigate step so the recording starts with context
-  void send({
-    type: 'STEP_EVENT',
-    step: {
-      kind: 'navigate',
-      url: location.href,
-      menuItem: parseUrl(location.href).menuItem,
-      company: parseUrl(location.href).company,
-      formTitle: getFormTitle(),
-    } as unknown as never,
+  void emitStep<'navigate'>({
+    kind: 'navigate',
+    url: location.href,
+    menuItem: parseUrl(location.href).menuItem,
+    company: parseUrl(location.href).company,
+    formTitle: getFormTitle(),
   });
 }
 
@@ -261,16 +245,13 @@ async function reconnectIfActive(): Promise<void> {
   attachListeners();
   ensureOverlay().setState(session.state, session.steps.length);
   // Emit a navigate step so the reconnect is visible in the timeline
-  void send({
-    type: 'STEP_EVENT',
-    step: {
-      kind: 'navigate',
-      url: location.href,
-      menuItem: parseUrl(location.href).menuItem,
-      company: parseUrl(location.href).company,
-      formTitle: getFormTitle(),
-      note: '[auto] reconnected after navigation',
-    } as unknown as never,
+  void emitStep<'navigate'>({
+    kind: 'navigate',
+    url: location.href,
+    menuItem: parseUrl(location.href).menuItem,
+    company: parseUrl(location.href).company,
+    formTitle: getFormTitle(),
+    note: '[auto] reconnected after navigation',
   });
 }
 
