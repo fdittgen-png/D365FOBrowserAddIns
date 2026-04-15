@@ -49,6 +49,20 @@ function makeArea(store: StorageRecord): chrome.storage.StorageArea {
     contains: vi.fn().mockResolvedValue(true),
     request: vi.fn().mockResolvedValue(true),
   } as unknown as typeof chrome.permissions,
+  commands: {
+    onCommand: { addListener: vi.fn(), removeListener: vi.fn(), hasListener: vi.fn() },
+    getAll: vi.fn().mockResolvedValue([]),
+  } as unknown as typeof chrome.commands,
+  tabs: {
+    get: vi.fn(),
+    create: vi.fn(),
+    query: vi.fn().mockResolvedValue([]),
+    sendMessage: vi.fn().mockResolvedValue({ ok: true }),
+    captureVisibleTab: vi.fn(),
+  } as unknown as typeof chrome.tabs,
+  downloads: {
+    download: vi.fn(),
+  } as unknown as typeof chrome.downloads,
 };
 
 // jsdom doesn't provide crypto.getRandomValues in older versions — polyfill if missing

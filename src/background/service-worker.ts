@@ -142,7 +142,10 @@ async function snapshotAndAttach(session: Session, stepId?: string): Promise<str
 
 // ----------------- message router -----------------
 
-onMessage(async (msg: Message, sender): Promise<MessageResponse> => {
+export async function handleMessage(
+  msg: Message,
+  sender: chrome.runtime.MessageSender,
+): Promise<MessageResponse> {
   const tabId = sender.tab?.id;
 
   switch (msg.type) {
@@ -442,7 +445,9 @@ onMessage(async (msg: Message, sender): Promise<MessageResponse> => {
     default:
       return { ok: false, error: `unknown-msg:${(msg as { type?: string }).type ?? '?'}` };
   }
-});
+}
+
+onMessage(handleMessage);
 
 async function blobToDataUrl(blob: Blob): Promise<string> {
   const buf = await blob.arrayBuffer();
