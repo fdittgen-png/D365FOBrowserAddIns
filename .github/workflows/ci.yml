@@ -80,8 +80,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build extension
-        run: npm run build
+      - name: Build extension (test mode — file:// + localhost matches)
+        run: BUILD_MODE=test npm run build
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
