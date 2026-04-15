@@ -1,0 +1,3 @@
+#!/usr/bin/env sh
+# Enforces Conventional Commits on every commit. To bypass: --no-verify.
+npx --no-install commitlint --edit "$1"

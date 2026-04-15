@@ -1,0 +1,11 @@
+#!/usr/bin/env sh
+# Runs on every commit. Lint+prettier only the staged files (fast), and
+# then a full typecheck + test pass (also fast — ~5s). If any step fails
+# the commit is aborted.
+#
+# To bypass in an emergency: git commit --no-verify
+# Please don't do that unless the fix is trivial and you're about to
+# follow up immediately.
+npx lint-staged
+npm run typecheck
+npm test

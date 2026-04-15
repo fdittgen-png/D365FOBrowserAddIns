@@ -27,6 +27,7 @@
     "node": ">=20"
   },
   "scripts": {
+    "prepare": "husky",
     "build": "node scripts/build.mjs",
     "validate:manifest": "node scripts/validate-manifest.mjs",
     "watch": "node scripts/build.mjs --watch",
@@ -43,6 +44,8 @@
     "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\""
   },
   "devDependencies": {
+    "@commitlint/cli": "^20.5.0",
+    "@commitlint/config-conventional": "^20.5.0",
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.59.1",
     "@types/adm-zip": "^0.5.8",
@@ -55,10 +58,21 @@
     "eslint-plugin-promise": "^7.2.1",
     "eslint-plugin-unicorn": "^64.0.0",
     "fake-indexeddb": "^6.2.5",
+    "husky": "^9.1.7",
     "jsdom": "^25.0.1",
+    "lint-staged": "^16.4.0",
     "prettier": "^3.8.3",
     "typescript": "^6.0.2",
     "typescript-eslint": "^8.58.2",
     "vitest": "^2.1.9"
+  },
+  "lint-staged": {
+    "*.ts": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{md,json,yml,yaml,mjs,js}": [
+      "prettier --write"
+    ]
   }
 }
