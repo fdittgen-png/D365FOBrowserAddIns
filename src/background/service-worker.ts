@@ -162,8 +162,11 @@ onMessage(async (msg: Message, sender): Promise<MessageResponse> => {
     case 'POPUP_START': {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       if (!tab?.id) return { ok: false, error: 'no-active-tab' };
+      // Dedicated no-op PING as the liveness check — the content script
+      // acknowledges it without mutating any state, so we no longer get a
+      // race window where listeners attach before a real session exists.
       try {
-        await chrome.tabs.sendMessage(tab.id, { type: 'STATE_UPDATE', state: 'recording', stepCount: 0 } satisfies Message);
+        await chrome.tabs.sendMessage(tab.id, { type: 'PING' } satisfies Message);
       } catch {
         return { ok: false, error: 'content-script-not-loaded (open a D365FO tab)' };
       }

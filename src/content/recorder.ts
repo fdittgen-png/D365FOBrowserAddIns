@@ -259,6 +259,10 @@ async function reconnectIfActive(): Promise<void> {
 
 onMessage(async (msg: Message): Promise<MessageResponse> => {
   switch (msg.type) {
+    case 'PING':
+      // Dedicated no-op liveness check. Never mutates recorder state so
+      // POPUP_START -> ping -> POPUP_START has no race window.
+      return { ok: true };
     case 'POPUP_START':
       if (!recording) await startRecording();
       return { ok: true };

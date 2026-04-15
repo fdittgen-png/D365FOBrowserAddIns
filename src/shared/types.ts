@@ -166,7 +166,8 @@ export type Message =
   | { type: 'REVIEW_GET_TRACKER_INFO' }
   // background -> content
   | { type: 'STATE_UPDATE'; state: SessionState; sessionId?: string; stepCount: number }
-  | { type: 'TRIGGER_OVERLAY_NOTE' };
+  | { type: 'TRIGGER_OVERLAY_NOTE' }
+  | { type: 'PING' };
 
 export interface MessageResponse<T = unknown> {
   ok: boolean;
